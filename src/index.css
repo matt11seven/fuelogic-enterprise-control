@@ -7,6 +7,49 @@
 
 @layer base {
   :root {
+    /* Fundo principal: Cinza muito claro com toque esverdeado */
+    --background: 150 50% 96%;
+    /* Títulos importantes: Preto/cinza escuro forte */
+    --foreground: 220 25% 15%;
+
+    /* Cores para cards */
+    --card: 160 15% 96%;
+    --card-foreground: 220 25% 15%;
+
+    /* Cores para popovers */
+    --popover: 160 15% 96%;
+    --popover-foreground: 220 25% 15%;
+
+    /* Cores primárias para botões e elementos de destaque */
+    --primary: 160 84% 39%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Cores secundárias para botões e elementos menos importantes */
+    --secondary: 160 10% 90%;
+    /* Textos secundários: Cinza médio */
+    --secondary-foreground: 220 15% 40%;
+
+    /* Cores para elementos atenuados */
+    --muted: 160 15% 92%;
+    /* Labels e detalhes: Cinza mais claro */
+    --muted-foreground: 220 10% 60%;
+
+    /* Cores para elementos de destaque */
+    --accent: 160 20% 88%;
+    --accent-foreground: 220 25% 20%;
+
+    /* Cores para elementos de alerta */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Cores para bordas e inputs */
+    --border: 160 15% 90%;
+    --input: 160 15% 90%;
+    --ring: 160 84% 39%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -34,7 +77,6 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 160 84% 39%;
-    --radius: 0.75rem;
   }
 }
 
@@ -44,8 +86,12 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-foreground min-h-screen;
+    @apply bg-background text-foreground min-h-screen;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .dark body {
+    @apply bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900;
   }
 
   html {
@@ -55,7 +101,15 @@
 
 @layer components {
   .glass-card {
-    @apply backdrop-blur-md bg-white/5 border border-white/10 rounded-xl shadow-2xl;
+    @apply backdrop-blur-md rounded-xl shadow-2xl;
+  }
+
+  .dark .glass-card {
+    @apply bg-white/5 border border-white/10;
+  }
+
+  .light .glass-card {
+    @apply bg-card border border-border shadow-md;
   }
 
   .glass-card-hover {
@@ -95,4 +149,38 @@
   .glow-amber {
     box-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
   }
+}
+
+/* Animações e estilos para seção expandida de detalhes */
+.tank-details-expansion {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  overflow: hidden;
+}
+
+.dark .tank-details-expansion {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.light .tank-details-expansion {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tank-details-expansion.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.detail-card {
+  transition: transform 0.2s ease-out;
+}
+
+.detail-card:hover {
+  transform: translateY(-2px);
 }

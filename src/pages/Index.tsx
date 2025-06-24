@@ -5,46 +5,14 @@ import Header from "@/components/Header";
 import MetricsCards from "@/components/MetricsCards";
 import StationCard from "@/components/StationCard";
 import OrderButton from "@/components/OrderButton";
+import { useTankData } from "@/hooks/use-tank-data";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [selectedTanks, setSelectedTanks] = useState<Record<string, { selected: boolean; quantity: number }>>({});
-
-  // Mock data for demonstration
-  const stations = [
-    {
-      id: "station-1",
-      name: "Posto Central",
-      address: "Av. Paulista, 1000 - São Paulo, SP",
-      tanks: [
-        { id: "tank-1", code: "GC", type: "Gasolina Comum", current: 2500, capacity: 15000 },
-        { id: "tank-2", code: "GA", type: "Gasolina Aditivada", current: 8500, capacity: 15000 },
-        { id: "tank-3", code: "ET", type: "Etanol", current: 12000, capacity: 20000 },
-        { id: "tank-4", code: "DS", type: "Diesel S10", current: 3200, capacity: 25000 }
-      ]
-    },
-    {
-      id: "station-2", 
-      name: "Posto Norte",
-      address: "Rod. Fernão Dias, Km 45 - Atibaia, SP",
-      tanks: [
-        { id: "tank-5", code: "GC", type: "Gasolina Comum", current: 7800, capacity: 12000 },
-        { id: "tank-6", code: "GA", type: "Gasolina Aditivada", current: 4500, capacity: 12000 },
-        { id: "tank-7", code: "ET", type: "Etanol", current: 15000, capacity: 18000 },
-        { id: "tank-8", code: "DS", type: "Diesel S10", current: 8900, capacity: 20000 }
-      ]
-    },
-    {
-      id: "station-3",
-      name: "Posto Sul", 
-      address: "Av. Washington Luís, 2500 - Santos, SP",
-      tanks: [
-        { id: "tank-9", code: "GC", type: "Gasolina Comum", current: 11200, capacity: 14000 },
-        { id: "tank-10", code: "GA", type: "Gasolina Aditivada", current: 6800, capacity: 14000 },
-        { id: "tank-11", code: "ET", type: "Etanol", current: 1800, capacity: 16000 },
-        { id: "tank-12", code: "DS", type: "Diesel S10", current: 18500, capacity: 22000 }
-      ]
-    }
-  ];
+  
+  // Buscar dados reais dos tanques da API
+  const { data: stations, isLoading, error } = useTankData();
 
   const handleTankSelect = (stationId: string, tankId: string, selected: boolean) => {
     const key = `${stationId}-${tankId}`;
@@ -93,13 +61,26 @@ const Index = () => {
         
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">Postos Monitorados</h2>
+            <h2 className="text-2xl font-bold text-emerald-400">Postos Monitorados</h2>
             <div className="text-sm text-slate-400">
-              {stations.length} postos ativos
+              {stations ? `${stations.length} postos ativos` : 'Carregando...'}
             </div>
           </div>
           
-          {stations.map(station => (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+              <p className="mt-4 text-slate-400">Carregando dados dos tanques...</p>
+            </div>
+          ) : error ? (
+            <div className="glass-card p-6 text-center">
+              <p className="text-red-400 font-medium mb-2">Erro ao carregar dados</p>
+              <p className="text-slate-400 text-sm">
+                Não foi possível obter informações dos tanques. Por favor, tente novamente mais tarde.
+              </p>
+              <p className="text-slate-500 text-xs mt-4">{(error as Error).message}</p>
+            </div>
+          ) : stations?.map(station => (
             <StationCard
               key={station.id}
               id={station.id}

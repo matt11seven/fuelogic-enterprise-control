@@ -26,11 +26,14 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
   
   const getCodeColor = () => {
     switch (code) {
-      case 'GC': return 'bg-blue-500';
-      case 'GA': return 'bg-purple-500';
-      case 'ET': return 'bg-green-500';
-      case 'DS': return 'bg-gray-500';
-      default: return 'bg-slate-500';
+    case 'GC': return 'bg-red-500';        // Gasolina Comum - Vermelho
+    case 'GA': return 'bg-blue-500';       // Gasolina Aditivada - Azul  
+    case 'GP': return 'bg-purple-500';     // Gasolina Podium - Roxo
+    case 'S10': return 'bg-yellow-500';    // Diesel S10 - Amarelo
+    case 'S10A': return 'bg-orange-500';   // Diesel S10 Aditivado - Laranja
+    case 'DS': return 'bg-amber-600';      // Diesel Comum - Âmbar
+    case 'ET': return 'bg-green-500';      // Etanol - Verde
+    default: return 'bg-slate-500';
     }
   };
 
@@ -68,11 +71,24 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
       </div>
 
       <div className="mb-3">
-        <div className="fuel-progress mb-1">
-          <div 
-            className={`fuel-progress-bar ${getProgressColor()}`}
-            style={{ width: `${percentage}%` }}
-          />
+        <div className="flex items-center mb-1 space-x-2">
+          {/* Ícone representando o tanque */}
+          <div className="w-6 h-8 border border-slate-600 rounded-sm relative overflow-hidden">
+            {/* Nível de combustível */}
+            <div 
+              className={`w-full ${getProgressColor()} absolute bottom-0 left-0 right-0 transition-all duration-500`}
+              style={{ height: `${percentage}%` }}
+            />
+          </div>
+          
+          {/* Barra de progresso horizontal */}
+          <div className="fuel-progress flex-1 relative h-2 overflow-hidden">
+            <div className="absolute top-0 left-0 bottom-0 w-full bg-slate-800/50 rounded-full" />
+            <div 
+              className={`absolute top-0 left-0 bottom-0 ${getProgressColor()} rounded-full transition-all duration-500`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-slate-400">{percentage.toFixed(1)}%</span>
