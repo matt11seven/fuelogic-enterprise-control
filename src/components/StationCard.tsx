@@ -1,6 +1,5 @@
 
-import { ChevronDown, ChevronUp, MapPin } from "lucide-react";
-import { useState } from "react";
+import { MapPin } from "lucide-react";
 import FuelTank from "./FuelTank";
 
 interface Tank {
@@ -30,8 +29,6 @@ const StationCard = ({
   onQuantityChange, 
   selectedTanks 
 }: StationCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const getStationStatus = () => {
     const criticalTanks = tanks.filter(tank => (tank.current / tank.capacity) < 0.2).length;
     const warningTanks = tanks.filter(tank => {
@@ -80,61 +77,51 @@ const StationCard = ({
     );
   };
 
+  const hasSelectedTanks = tanks.some(tank => selectedTanks[`${id}-${tank.id}`]?.selected);
+
   return (
     <div className="glass-card-hover">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4 flex-1">
             <MapPin className="w-5 h-5 text-emerald-400" />
-            <div>
+            <div className="flex-1 min-w-0">
               <h3 className="text-xl font-bold text-white">{name}</h3>
               <p className="text-slate-400 text-sm">{address}</p>
             </div>
+            
+            <div className="flex items-center space-x-4 ml-8">
+              {tanks.map(renderMiniTank)}
+            </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              status.color === 'red' ? 'bg-red-900/30 text-red-400 border border-red-500/30' :
-              status.color === 'amber' ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30' :
-              'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30'
-            }`}>
-              {status.label} ({status.count})
-            </div>
-            
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {isExpanded ? 
-                <ChevronUp className="w-5 h-5 text-slate-400" /> : 
-                <ChevronDown className="w-5 h-5 text-slate-400" />
-              }
-            </button>
+          <div className={`ml-4 px-3 py-1 rounded-full text-xs font-semibold ${
+            status.color === 'red' ? 'bg-red-900/30 text-red-400 border border-red-500/30' :
+            status.color === 'amber' ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30' :
+            'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30'
+          }`}>
+            {status.label} ({status.count})
           </div>
         </div>
 
-        {!isExpanded && (
-          <div className="flex items-center space-x-4">
-            {tanks.map(renderMiniTank)}
-          </div>
-        )}
-
-        {isExpanded && (
-          <div className="animate-fade-in">
+        {hasSelectedTanks && (
+          <div className="animate-fade-in border-t border-white/10 pt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tanks.map(tank => (
-                <FuelTank
-                  key={tank.id}
-                  code={tank.code}
-                  type={tank.type}
-                  current={tank.current}
-                  capacity={tank.capacity}
-                  isSelected={selectedTanks[`${id}-${tank.id}`]?.selected || false}
-                  onSelect={(selected) => onTankSelect(id, tank.id, selected)}
-                  quantity={selectedTanks[`${id}-${tank.id}`]?.quantity || 0}
-                  onQuantityChange={(quantity) => onQuantityChange(id, tank.id, quantity)}
-                />
-              ))}
+              {tanks
+                .filter(tank => selectedTanks[`${id}-${tank.id}`]?.selected)
+                .map(tank => (
+                  <FuelTank
+                    key={tank.id}
+                    code={tank.code}
+                    type={tank.type}
+                    current={tank.current}
+                    capacity={tank.capacity}
+                    isSelected={selectedTanks[`${id}-${tank.id}`]?.selected || false}
+                    onSelect={(selected) => onTankSelect(id, tank.id, selected)}
+                    quantity={selectedTanks[`${id}-${tank.id}`]?.quantity || 0}
+                    onQuantityChange={(quantity) => onQuantityChange(id, tank.id, quantity)}
+                  />
+                ))}
             </div>
           </div>
         )}
