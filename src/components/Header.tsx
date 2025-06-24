@@ -22,10 +22,10 @@ const Header = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent text-shadow">
-              FuelLogic Enterprise
+              GasStation Enterprise
             </h1>
             <p className="text-slate-400 text-sm font-medium">
-              Advanced Fuel Management & Procurement System
+              Gerênciamento Avançado de tanques
             </p>
           </div>
         </div>
