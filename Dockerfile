@@ -16,14 +16,27 @@ RUN npm ci
 # Voltar para o diretório principal
 WORKDIR /app
 
+# Adicionar após WORKDIR /app e antes de copiar os arquivos
+ARG VITE_TANKS_ENDPOINT
+ARG VITE_API_KEY
+ARG VITE_NODE_ENV=production
+ARG VITE_API_BASE_URL=http://localhost:3001
+ARG VITE_MASTER_USERNAME
+ARG VITE_MASTER_PASSWORD
+ARG VITE_MASTER_API_KEY
+
+# E então definir como variáveis de ambiente
+ENV VITE_TANKS_ENDPOINT=$VITE_TANKS_ENDPOINT
+ENV VITE_API_KEY=$VITE_API_KEY
+ENV VITE_NODE_ENV=$VITE_NODE_ENV
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_MASTER_USERNAME=$VITE_MASTER_USERNAME
+ENV VITE_MASTER_PASSWORD=$VITE_MASTER_PASSWORD
+ENV VITE_MASTER_API_KEY=$VITE_MASTER_API_KEY
+
 # Copiar todo o código fonte (ANTES do build!)
 COPY . .
 
-# Configurações de build não-sensíveis com valores padrão
-ENV NODE_ENV=production
-ENV PORT=3001
-ENV VITE_API_BASE_URL=http://localhost:3001
-ENV VITE_NODE_ENV=production
 
 # Construir o frontend
 RUN npm run build
