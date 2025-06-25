@@ -28,8 +28,20 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
       throw new Error(`Erro na requisição: ${response.status}`);
     }
     
-    const data: TankData[] = await response.json();
-    return data;
+    // Verificar se há conteúdo na resposta antes de tentar fazer o parse
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      console.warn('API retornou uma resposta vazia');
+      return [];
+    }
+    
+    try {
+      const data: TankData[] = JSON.parse(text);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Erro ao processar JSON da resposta:', error);
+      throw new Error(`Erro ao processar resposta da API: ${error.message}`);
+    }
   } catch (error) {
     console.error("Erro ao buscar dados dos tanques:", error);
     throw error;
