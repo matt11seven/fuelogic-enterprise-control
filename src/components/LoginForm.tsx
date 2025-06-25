@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, Loader2, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -41,81 +42,92 @@ export function LoginForm() {
   };
   
   return (
-      <Card className="w-full max-w-[400px] glass-card border-2 border-slate-700 bg-slate-900/80 shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">Gasmobile</CardTitle>
-          <CardDescription className="text-center text-slate-300">
-            Tank System
-          </CardDescription>
-        </CardHeader>
-        
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-300">Usuário</Label>
+    <Card className="w-full max-w-[400px] glass-card animate-fade-in">
+      <CardHeader className="space-y-4 text-center">
+        <div className="flex justify-center mb-4">
+          <div className="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl glow-emerald shadow-lg">
+            <Database className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+          GasMobile Enterprise
+        </CardTitle>
+        <CardDescription className="text-slate-600 dark:text-slate-400">
+          Sistema de Controle de Tanques
+        </CardDescription>
+      </CardHeader>
+      
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive" className="animate-fade-in">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="space-y-2">
+            <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 font-medium">
+              Usuário
+            </Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="Digite seu nome de usuário"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={isLoading}
+              required
+              className="glass-card-input h-11 transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 font-medium">
+              Senha
+            </Label>
+            <div className="relative">
               <Input
-                id="username"
-                type="text"
-                placeholder="Digite seu nome de usuário"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
-                className="glass-card-input bg-slate-800 text-white border-slate-700"
+                className="glass-card-input h-11 pr-10 transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-400/20"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors duration-200"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Senha</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Digite sua senha"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  required
-                  className="glass-card-input bg-slate-800 text-white border-slate-700 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-          </CardContent>
-          
-          <CardFooter>
-            <Button 
-              type="submit" 
-              className="w-full bg-emerald-700 hover:bg-emerald-600 text-white"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Autenticando
-                </>
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Entrar
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+          </div>
+        </CardContent>
+        
+        <CardFooter>
+          <Button 
+            type="submit" 
+            className="w-full h-11 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/35 transition-all duration-200 hover:scale-[1.02]"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Autenticando...
+              </>
+            ) : (
+              <>
+                <LogIn className="mr-2 h-4 w-4" />
+                Entrar
+              </>
+            )}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 }
