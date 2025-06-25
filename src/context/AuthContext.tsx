@@ -136,6 +136,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Verificar se recebemos uma apiKey válida do backend
         if (!userData.apiKey) {
           console.warn('[AVISO] Login bem-sucedido mas sem apiKey do usuário. Verifique se a coluna api_key está sendo retornada corretamente pelo backend.');
+          
+          // TRATAMENTO DEFENSIVO: Se não recebemos apiKey do backend, tentamos usar a de emergência
+          // Isso evita o erro "Cannot read properties of undefined (reading 'substring')"
+          if (EMERGENCY_CREDENTIALS.apiKey) {
+            console.warn('[AVISO] Usando apiKey de emergência como fallback');
+            userData.apiKey = EMERGENCY_CREDENTIALS.apiKey;
+          } else {
+            console.error('[ERRO] Nenhuma apiKey disponível, mesmo em modo fallback. Funcionalidade de tanques ficará indisponível.');
+            // API Key vazia para evitar erro de substring em undefined
+            userData.apiKey = '';
+          }
         } else {
           console.log('[INFO] apiKey obtida do usuário: ', !!userData.apiKey);
         }
@@ -144,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(userData);
         localStorage.setItem('fuelogic_user', JSON.stringify(userData));
         
-        // Usamos diretamente a apiKey do usuário, sem fallbacks
+        // Usamos a apiKey do usuário (agora garantidamente não indefinida)
         setApiKey(userData.apiKey);
         
         console.log('[INFO] Login via API realizado com sucesso');
