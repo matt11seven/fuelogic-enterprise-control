@@ -5,6 +5,12 @@ WORKDIR /app
 # Copiar arquivos de configuração
 COPY package*.json ./
 
+# Definir variáveis de ambiente para o build
+ARG VITE_TANKS_ENDPOINT
+ARG VITE_API_KEY
+ENV VITE_TANKS_ENDPOINT=$VITE_TANKS_ENDPOINT
+ENV VITE_API_KEY=$VITE_API_KEY
+
 # Instalar dependências
 RUN npm ci
 
@@ -18,7 +24,9 @@ RUN npm run build
 RUN npm install -g serve
 
 # Expor porta
-EXPOSE 3000
+EXPOSE 80
 
 # Comando para iniciar a aplicação
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "dist", "-l", "80"]
+
+
