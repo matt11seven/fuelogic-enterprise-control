@@ -1,12 +1,7 @@
 import { TankData } from "../types/api";
 import logger from '../utils/logger';
-import authApi from './auth-api';
 
-// URL base do backend
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-
-// Endpoint da API de tanques - agora usa o proxy do backend
-export const API_ENDPOINT = `${API_BASE_URL}/tanks/data`;
+export const API_ENDPOINT = import.meta.env.VITE_TANKS_ENDPOINT;
 
 /**
  * Busca os dados de todos os tanques da API usando a chave fornecida
@@ -22,14 +17,7 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
     logger.log('Endpoint da API:', API_ENDPOINT);
     
     if (!API_ENDPOINT) {
-      throw new Error("Endpoint da API não definido. Verifique a variável de ambiente VITE_API_BASE_URL.");
-    }
-
-    // Buscar o token JWT - necessário para acessar rotas protegidas no backend
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      throw new Error("Token de autenticação não encontrado");
+      throw new Error("Endpoint da API não definido. Verifique a variável de ambiente VITE_TANKS_ENDPOINT.");
     }
 
     // Adiciona apiKey como parâmetro de consulta
@@ -42,8 +30,7 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}` // Adiciona o token JWT na requisição
+        'Accept': 'application/json'
       }
     });
     
