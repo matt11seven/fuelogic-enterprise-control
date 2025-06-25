@@ -1,0 +1,42 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de configuração
+COPY package*.json ./
+
+# Definir variáveis de ambiente para o build
+ARG VITE_TANKS_ENDPOINT
+ARG VITE_API_KEY
+ARG VITE_API_BASE_URL
+ARG VITE_NODE_ENV=production
+ARG VITE_MASTER_USERNAME
+ARG VITE_MASTER_PASSWORD
+ARG VITE_MASTER_API_KEY
+
+# Configuração de variáveis de ambiente
+ENV VITE_TANKS_ENDPOINT=$VITE_TANKS_ENDPOINT
+ENV VITE_API_KEY=$VITE_API_KEY
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_NODE_ENV=$VITE_NODE_ENV
+ENV VITE_MASTER_USERNAME=$VITE_MASTER_USERNAME
+ENV VITE_MASTER_PASSWORD=$VITE_MASTER_PASSWORD
+ENV VITE_MASTER_API_KEY=$VITE_MASTER_API_KEY
+
+# Instalar dependências
+RUN npm ci
+
+# Copiar código fonte
+COPY . .
+
+# Construir aplicação
+RUN npm run build
+
+# Instalar servidor para servir conteúdo estático
+RUN npm install -g serve
+
+# Expor porta
+EXPOSE 80
+
+# Comando para iniciar a aplicação
+CMD ["serve", "-s", "dist", "-l", "80"]

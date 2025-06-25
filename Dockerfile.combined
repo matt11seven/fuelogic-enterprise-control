@@ -1,0 +1,83 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de configuração
+COPY package*.json ./
+COPY server/package*.json ./server/
+
+# Definir variáveis de ambiente compartilhadas
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+# Variáveis de ambiente para o frontend
+ARG VITE_TANKS_ENDPOINT
+ARG VITE_API_KEY
+ARG VITE_API_BASE_URL=http://localhost:3001
+ARG VITE_NODE_ENV=production
+ARG VITE_MASTER_USERNAME
+ARG VITE_MASTER_PASSWORD
+ARG VITE_MASTER_API_KEY
+
+ENV VITE_TANKS_ENDPOINT=$VITE_TANKS_ENDPOINT
+ENV VITE_API_KEY=$VITE_API_KEY
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_NODE_ENV=$VITE_NODE_ENV
+ENV VITE_MASTER_USERNAME=$VITE_MASTER_USERNAME
+ENV VITE_MASTER_PASSWORD=$VITE_MASTER_PASSWORD
+ENV VITE_MASTER_API_KEY=$VITE_MASTER_API_KEY
+
+# Variáveis de ambiente para o backend
+ARG PORT=3001
+ARG DB_HOST
+ARG DB_PORT
+ARG DB_NAME
+ARG DB_USER
+ARG DB_PASSWORD
+ARG JWT_SECRET
+ARG JWT_EXPIRES_IN=24h
+
+ENV PORT=$PORT
+ENV DB_HOST=$DB_HOST
+ENV DB_PORT=$DB_PORT
+ENV DB_NAME=$DB_NAME
+ENV DB_USER=$DB_USER
+ENV DB_PASSWORD=$DB_PASSWORD
+ENV JWT_SECRET=$JWT_SECRET
+ENV JWT_EXPIRES_IN=$JWT_EXPIRES_IN
+ENV MASTER_USERNAME=$VITE_MASTER_USERNAME
+ENV MASTER_PASSWORD=$VITE_MASTER_PASSWORD
+ENV MASTER_API_KEY=$VITE_MASTER_API_KEY
+
+# Instalar dependências do frontend
+RUN npm ci
+
+# Instalar dependências do backend
+WORKDIR /app/server
+RUN npm ci
+
+# Voltar para o diretório principal
+WORKDIR /app
+
+# Copiar código fonte
+COPY . .
+
+# Construir o frontend
+RUN npm run build
+
+# Instalar ferramentas necessárias
+RUN npm install -g serve pm2
+
+# Criar script de inicialização
+RUN echo '#!/bin/sh\n\
+# Iniciar o backend como um processo em segundo plano\n\
+cd /app/server && pm2 start src/index.js --name backend\n\
+# Iniciar o frontend\n\
+cd /app && serve -s dist -l 80\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Expor portas
+EXPOSE 80 3001
+
+# Comando para iniciar ambos os serviços
+CMD ["/app/start.sh"]

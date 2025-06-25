@@ -1,0 +1,26 @@
+# Variáveis de ambiente unificadas para EasyPanel
+# Formato: chave=valor
+
+# === FRONTEND ===
+VITE_TANKS_ENDPOINT=https://api.example.com/tanks
+VITE_API_KEY=
+VITE_API_BASE_URL=http://localhost:3001
+VITE_NODE_ENV=production
+VITE_MASTER_USERNAME=admin
+VITE_MASTER_PASSWORD=secure_password
+VITE_MASTER_API_KEY=
+
+# === BACKEND ===
+PORT=3001
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=fuelogic_enterprise
+DB_USER=postgres
+DB_PASSWORD=secure_db_password
+JWT_SECRET=jwt_secret_key_muito_seguro
+JWT_EXPIRES_IN=24h
+
+
+# Para modo de produção (ocultar logs):
+VITE_NODE_ENV=production
+

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-// import { dbService } from '@/services/db-service';
+import authApi, { User, LoginCredentials } from '../services/auth-api';
+import logger from '../utils/logger';
 
 // Credenciais de emergência baseadas em variáveis de ambiente - IMPORTANTE: VITE_ prefix é necessário
 const EMERGENCY_CREDENTIALS = {
@@ -8,20 +9,13 @@ const EMERGENCY_CREDENTIALS = {
   apiKey: import.meta.env.VITE_API_KEY || ''
 };
 
-// Debug: apenas para desenvolvimento
-console.log('Variáveis de ambiente disponíveis:', Object.keys(import.meta.env));
-console.log('Credenciais de emergência configuradas:', Boolean(EMERGENCY_CREDENTIALS.username && EMERGENCY_CREDENTIALS.password));
+// Debug: apenas para desenvolvimento (usando o logger que controla pelo ambiente)
+logger.log('Variáveis de ambiente disponíveis:', Object.keys(import.meta.env));
+logger.log('Credenciais de emergência configuradas:', Boolean(EMERGENCY_CREDENTIALS.username && EMERGENCY_CREDENTIALS.password));
+logger.log('API Key de emergência configurada:', Boolean(EMERGENCY_CREDENTIALS.apiKey));
 
 // Verificar se as credenciais de emergência estão configuradas
 const hasEmergencyLogin = Boolean(EMERGENCY_CREDENTIALS.username && EMERGENCY_CREDENTIALS.password);
-
-interface User {
-  id: string;
-  username: string;
-  email: string | null;
-  role: string;
-  apiKey: string | null;
-}
 
 interface AuthContextType {
   user: User | null;
@@ -44,6 +38,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Função para buscar a API key (com chamada à API)
+  const getApiKey = async (): Promise<string | null> => {
+    // Verificar primeiro se existe no .env
+    const envApiKey = import.meta.env.VITE_API_KEY;
+    
+    if (envApiKey) {
+      return envApiKey;
+    }
+    
+    // Se não encontrou no .env, verificar usuário logado
+    if (user?.apiKey) {
+      return user.apiKey;
+    }
+    
+    try {
+      // Tentar obter a API key do usuário master via API
+      const masterKey = await authApi.getMasterApiKey();
+      if (masterKey) {
+        return masterKey;
+      }
+    } catch (error) {
+      console.error('Erro ao obter API key do master:', error);
+    }
+    
+    // Fallback para modo de emergência
+    return EMERGENCY_CREDENTIALS.apiKey;
+  };
 
   // Verificar usuário no localStorage e apiKey no .env ao iniciar
   useEffect(() => {
@@ -71,24 +93,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initAuth();
   }, []);
 
-  // Função para buscar a API key (sem chamada ao banco)
-  const getApiKey = async (): Promise<string | null> => {
-    // Verificar primeiro se existe no .env
-    const envApiKey = import.meta.env.VITE_API_KEY;
-    
-    if (envApiKey) {
-      return envApiKey;
-    }
-    
-    // Se não encontrou no .env, verificar usuário logado
-    if (user?.apiKey) {
-      return user.apiKey;
-    }
-    
-    // Se estiver em modo de emergência, usar a chave de emergência
-    return EMERGENCY_CREDENTIALS.apiKey;
-  };
-
   // Função de login (com suporte a modo emergência)
   const login = async (username: string, password: string): Promise<boolean> => {
     setError(null);
@@ -103,22 +107,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
           email: "admin@fuelogic.com",
           role: "admin",
           apiKey: EMERGENCY_CREDENTIALS.apiKey
-        };
+        } as User;
         
         // Armazenar o usuário nos dados da sessão
         setUser(emergencyUser);
         localStorage.setItem('fuelogic_user', JSON.stringify(emergencyUser));
         setApiKey(EMERGENCY_CREDENTIALS.apiKey);
         
+        console.log('Login emergencial realizado com sucesso');
         return true;
       }
       
-      // Em uma implementação real, aqui faria a chamada a uma API de login
-      // await api.post('/auth/login', { username, password })
-      
-      // Por enquanto, apenas rejeitar qualquer outro login
-      setError('Credenciais inválidas ou servidor indisponível');
-      return false;
+      try {
+        // Tentativa de autenticação usando a API
+        const credentials: LoginCredentials = { username, password };
+        const userData = await authApi.login(credentials);
+        
+        // Usuário autenticado com sucesso
+        setUser(userData);
+        localStorage.setItem('fuelogic_user', JSON.stringify(userData));
+        setApiKey(userData.apiKey || await getApiKey());
+        
+        console.log('Login via API realizado com sucesso');
+        return true;
+      } catch (apiError: any) {
+        // Verificar o tipo de erro
+        if (apiError.response) {
+          // Erro retornado pelo servidor
+          console.error('Erro de API:', apiError.response.data);
+          setError(apiError.response.data.message || 'Credenciais inválidas');
+        } else if (apiError.request) {
+          // Sem resposta do servidor
+          console.error('Sem resposta do servidor:', apiError.request);
+          setError('Servidor indisponível. Verifique sua conexão.');
+        } else {
+          // Erro na configuração da requisição
+          console.error('Erro de configuração:', apiError.message);
+          setError('Erro ao configurar a requisição de login.');
+        }
+        return false;
+      }
     } catch (err) {
       console.error('Erro ao fazer login:', err);
       setError('Erro ao conectar ao servidor');

@@ -1,54 +1,52 @@
-import { Pool } from 'pg';
+import { User } from './auth-api';
+import logger from '../utils/logger';
 import bcrypt from 'bcryptjs';
+
+// Tipo simulando o resultado de uma consulta
+interface QueryResult<T> {
+  rows: T[];
+}
 
 /**
  * Serviço para interagir com o banco de dados PostgreSQL
  */
 class DbService {
-  private pool: Pool | null = null;
   private isConnected = false;
   
   /**
-   * Inicializa a conexão com o banco de dados
+   * Simula a inicialização da conexão com o banco de dados
+   * No frontend, não podemos realmente conectar ao PostgreSQL
    */
   async connect() {
     if (this.isConnected) return;
     
     try {
-      this.pool = new Pool({
-        host: import.meta.env.DB_HOST || 'localhost',
-        port: parseInt(import.meta.env.DB_PORT || '5432'),
-        database: import.meta.env.DB_NAME || 'fuelogic_enterprise',
-        user: import.meta.env.DB_USER || 'postgres',
-        password: import.meta.env.DB_PASSWORD,
-        ssl: false, // Ative se necessário para conexões externas
-      });
+      // Simulando conexão para o frontend
+      // Em produção, isso seria substituído por chamadas a uma API backend
+      logger.log('Simulando conexão ao banco de dados no frontend');
       
-      // Testar conexão
-      const client = await this.pool.connect();
-      client.release();
+      // Delay simulado de rede
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       this.isConnected = true;
-      console.log('Conectado ao PostgreSQL com sucesso!');
+      logger.log('Simulação de conexão ao banco completada');
     } catch (error) {
-      console.error('Erro ao conectar ao PostgreSQL:', error);
-      throw new Error('Falha na conexão com o banco de dados');
+      console.error('Erro ao simular conexão:', error);
+      throw new Error('Falha na simulação de conexão com o banco de dados');
     }
   }
   
   /**
-   * Fecha a conexão com o pool
+   * Simula o fechamento da conexão
    */
   async disconnect() {
-    if (this.pool) {
-      await this.pool.end();
-      this.isConnected = false;
-      this.pool = null;
-    }
+    this.isConnected = false;
+    logger.log('Simulação de desconexão completa');
   }
   
   /**
    * Autentica um usuário e retorna seus dados
+   * Esta implementação é uma simulação - em produção, seria uma chamada API
    */
   async authenticateUser(username: string, password: string): Promise<{
     id: string;
@@ -57,30 +55,49 @@ class DbService {
     role: string;
     apiKey: string | null;
   } | null> {
-    if (!this.pool) await this.connect();
+    await this.connect();
     
     try {
-      const query = `
-        SELECT u.id, u.username, u.email, u.password_hash, u.api_key, r.name as role
-        FROM users u
-        JOIN roles r ON u.role_id = r.id
-        WHERE u.username = $1 AND u.is_active = true
-      `;
+      // Simulando um delay de rede
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      const result = await this.pool!.query(query, [username]);
+      // Usuário de demonstração para testes
+      // No ambiente real, isso viria do servidor
+      const mockUsers = [
+        {
+          id: "1",
+          username: "admin",
+          password_hash: await bcrypt.hash("admin", 10), // Em produção, nunca armazene senhas em frontend
+          email: "admin@fuelogic.com",
+          role: "admin",
+          api_key: "test_api_key_1234"
+        },
+        {
+          id: "2",
+          username: "operator",
+          password_hash: await bcrypt.hash("operator", 10),
+          email: "operator@fuelogic.com",
+          role: "operator",
+          api_key: "test_api_key_5678"
+        }
+      ];
       
-      if (result.rows.length === 0) {
+      // Encontrar usuário pelo nome
+      const user = mockUsers.find(u => u.username === username);
+      
+      if (!user) {
+        logger.log('Usuário não encontrado:', username);
         return null; // Usuário não encontrado
       }
       
-      const user = result.rows[0];
-      
-      // Comparar senha (na aplicação real, use bcrypt.compare)
+      // Comparar senha
       const isPasswordValid = await bcrypt.compare(password, user.password_hash);
       if (!isPasswordValid) {
+        logger.log('Senha incorreta para usuário:', username);
         return null; // Senha incorreta
       }
       
+      logger.log('Autenticação bem-sucedida para:', username);
       return {
         id: user.id,
         username: user.username,
@@ -95,27 +112,23 @@ class DbService {
   }
   
   /**
-   * Busca a API key do usuário master
+   * Busca a API key do usuário master (simulado)
    */
   async getMasterApiKey(): Promise<string | null> {
-    if (!this.pool) await this.connect();
+    await this.connect();
     
     try {
-      const masterUsername = import.meta.env.MASTER_USERNAME || 'admin';
+      const masterUsername = import.meta.env.VITE_MASTER_USERNAME || 'admin';
       
-      const query = `
-        SELECT api_key FROM users
-        JOIN roles ON users.role_id = roles.id
-        WHERE username = $1 AND roles.name = 'admin' AND is_active = true
-      `;
+      // Simulação para frontend - em produção seria uma chamada API
+      logger.log('Buscando API key para usuário master:', masterUsername);
       
-      const result = await this.pool!.query(query, [masterUsername]);
-      
-      if (result.rows.length === 0) {
-        return null;
+      // Para fins de teste
+      if (masterUsername === 'admin') {
+        return 'test_api_key_1234';
       }
       
-      return result.rows[0].api_key;
+      return null;
     } catch (error) {
       console.error('Erro ao buscar API key master:', error);
       return null;
@@ -123,18 +136,22 @@ class DbService {
   }
   
   /**
-   * Registra um acesso no log
+   * Registra um acesso no log (simulado)
    */
   async logAccess(userId: string, action: string, ipAddress?: string, userAgent?: string) {
-    if (!this.pool) await this.connect();
+    await this.connect();
     
     try {
-      const query = `
-        INSERT INTO access_logs (user_id, action, ip_address, user_agent)
-        VALUES ($1, $2, $3, $4)
-      `;
+      // Apenas logar no console para simulação
+      logger.log('Registrando acesso (simulado):', { 
+        userId, 
+        action, 
+        ipAddress: ipAddress || 'não disponível',
+        userAgent: userAgent || 'não disponível',
+        timestamp: new Date().toISOString()
+      });
       
-      await this.pool!.query(query, [userId, action, ipAddress || null, userAgent || null]);
+      // No ambiente real, isso enviaria uma requisição ao backend
     } catch (error) {
       console.error('Erro ao registrar log de acesso:', error);
     }
