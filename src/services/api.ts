@@ -16,6 +16,14 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
     const url = new URL(API_ENDPOINT);
     url.searchParams.append('apiKey', apiKey);
     
+    // Logs de depuração apenas em ambiente de desenvolvimento
+    const isDev = import.meta.env.VITE_NODE_ENV === 'development';
+    if (isDev) {
+      console.log("[DEBUG] Ambiente:", import.meta.env.VITE_NODE_ENV);
+      console.log("[DEBUG] Endpoint de tanques:", API_ENDPOINT);
+      console.log("[DEBUG] URL completa:", url.toString());
+    }
+    
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
@@ -23,6 +31,12 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
         'Accept': 'application/json'
       }
     });
+    
+    // Log do status da resposta apenas em ambiente de desenvolvimento
+    if (isDev) {
+      console.log("[DEBUG] Status da resposta:", response.status);
+      console.log("[DEBUG] Headers:", [...response.headers.entries()]);
+    }
     
     if (!response.ok) {
       throw new Error(`Erro na requisição: ${response.status}`);
