@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TankData } from '../types/api';
 import { fetchTankData, groupTanksByStation, getProductCode } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export interface Tank {
   id: string;
@@ -23,9 +24,12 @@ export interface Station {
 }
 
 export function useTankData() {
+  const { apiKey } = useAuth();
+  
   return useQuery({
-    queryKey: ['tanks'],
-    queryFn: fetchTankData,
+    queryKey: ['tanks', apiKey],
+    queryFn: () => fetchTankData(apiKey),
+    enabled: !!apiKey, // Só executa a query se tiver uma API key
     select: (data: TankData[]): Station[] => {
       // Agrupar tanques por unidade (posto)
       const tankGroups = groupTanksByStation(data);

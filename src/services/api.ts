@@ -1,16 +1,20 @@
 import { TankData } from "../types/api";
 
 export const API_ENDPOINT = import.meta.env.VITE_TANKS_ENDPOINT;
-export const API_KEY = import.meta.env.VITE_API_KEY;
 
 /**
- * Busca os dados de todos os tanques da API
+ * Busca os dados de todos os tanques da API usando a chave fornecida
+ * @param apiKey - A chave de API para autorização
  */
-export async function fetchTankData(): Promise<TankData[]> {
+export async function fetchTankData(apiKey: string | null): Promise<TankData[]> {
   try {
+    if (!apiKey) {
+      throw new Error("Chave de API não fornecida. Faça login para continuar.");
+    }
+
     // Adiciona apiKey como parâmetro de consulta
     const url = new URL(API_ENDPOINT);
-    url.searchParams.append('apiKey', API_KEY);
+    url.searchParams.append('apiKey', apiKey);
     
     const response = await fetch(url.toString(), {
       method: 'GET',

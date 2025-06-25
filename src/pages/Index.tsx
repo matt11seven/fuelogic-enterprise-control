@@ -6,6 +6,7 @@ import MetricsCards from "@/components/MetricsCards";
 import StationCard from "@/components/StationCard";
 import OrderButton from "@/components/OrderButton";
 import FuelTank from "@/components/FuelTank";
+import PurchaseSuggestionModal from "@/components/PurchaseSuggestionModal";
 import { useTankData } from "@/hooks/use-tank-data";
 import { Loader2, AlertTriangle, AlertCircle, CheckCircle, Droplet } from "lucide-react";
 
@@ -63,7 +64,10 @@ const Index = () => {
         
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-emerald-400">Postos Monitorados</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-emerald-400">Postos Monitorados</h2>
+              <PurchaseSuggestionModal stations={stations} />
+            </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
@@ -91,7 +95,7 @@ const Index = () => {
               </div>
             </div>
             <div className="text-sm text-slate-900 dark:text-slate-400">
-              {stations ? `${stations.length} postos ativos` : 'Carregando...'}
+              {stations ? `${stations.length} postos ativos • ${stations.reduce((total, station) => total + station.tanks.length, 0)} tanques monitorados` : 'Carregando...'}
             </div>
           </div>
           

@@ -1,5 +1,6 @@
 
 import { Database, Sun, Moon } from "lucide-react";
+import { ProfileButton } from "./ProfileButton";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
@@ -43,6 +44,7 @@ const Header = () => {
         </div>
         
         <div className="flex items-center space-x-6">
+          <ProfileButton />
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full bg-slate-800/50 hover:bg-slate-700/60 transition-colors duration-200 border border-slate-700"
