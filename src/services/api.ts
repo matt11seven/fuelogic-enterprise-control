@@ -1,5 +1,4 @@
 import { TankData } from "../types/api";
-import logger from '../utils/logger';
 
 export const API_ENDPOINT = import.meta.env.VITE_TANKS_ENDPOINT;
 
@@ -13,18 +12,9 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
       throw new Error("Chave de API não fornecida. Faça login para continuar.");
     }
 
-    // Log para depuração - mostrar o endpoint sendo usado
-    logger.log('Endpoint da API:', API_ENDPOINT);
-    
-    if (!API_ENDPOINT) {
-      throw new Error("Endpoint da API não definido. Verifique a variável de ambiente VITE_TANKS_ENDPOINT.");
-    }
-
     // Adiciona apiKey como parâmetro de consulta
     const url = new URL(API_ENDPOINT);
     url.searchParams.append('apiKey', apiKey);
-    
-    logger.log('Fazendo requisição para:', url.toString());
     
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -34,31 +24,14 @@ export async function fetchTankData(apiKey: string | null): Promise<TankData[]> 
       }
     });
     
-    logger.log('Status da resposta:', response.status, response.statusText);
-    
     if (!response.ok) {
-      throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+      throw new Error(`Erro na requisição: ${response.status}`);
     }
     
-    // Obter o texto da resposta primeiro para depuração
-    const responseText = await response.text();
-    logger.log('Corpo da resposta:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-    
-    // Se o texto estiver vazio, lançar um erro específico
-    if (!responseText || responseText.trim() === '') {
-      throw new Error('A API retornou uma resposta vazia');
-    }
-    
-    try {
-      // Tentar converter o texto para JSON
-      const data: TankData[] = JSON.parse(responseText);
-      return data;
-    } catch (parseError) {
-      logger.error('Erro ao fazer parse do JSON:', parseError);
-      throw new Error(`Resposta inválida da API: ${parseError.message}`);
-    }
+    const data: TankData[] = await response.json();
+    return data;
   } catch (error) {
-    logger.error("Erro ao buscar dados dos tanques:", error);
+    console.error("Erro ao buscar dados dos tanques:", error);
     throw error;
   }
 }
