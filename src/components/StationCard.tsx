@@ -71,7 +71,14 @@ const StationCard = ({
 
   const renderMiniTank = (tank: Tank) => {
     const percentage = (tank.current / tank.capacity) * 100;
+    // Verificar se tem água no tanque
+    const hasWater = tank.apiData && tank.apiData.QuantidadeDeAgua > 0;
+    
     const getColor = () => {
+      // Priorizar alerta de água sobre outros status
+      if (hasWater) return 'bg-blue-500';
+      
+      // Status baseados no nível de combustível
       if (percentage < 20) return 'bg-red-500';
       if (percentage < 50) return 'bg-amber-500';
       return 'bg-emerald-500';
@@ -100,8 +107,27 @@ const StationCard = ({
         aria-expanded={isExpanded}
         title={`Clique para ${isExpanded ? 'fechar' : 'ver'} detalhes do tanque de ${tank.type}`}
       >
-        <div className={`hex-badge ${getCodeColor()} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''}`}>
+        <div className={`hex-badge ${getCodeColor()} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative`}>
           {tank.code}
+          {hasWater && (
+            <div 
+              className="absolute -top-1 -right-1 bg-blue-400 rounded-full w-3 h-3 border border-blue-900 flex items-center justify-center shadow-lg z-10"
+              title={`Água detectada: ${tank.apiData?.QuantidadeDeAgua.toLocaleString()}L`}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="#38bdf8" 
+                stroke="#0c4a6e" 
+                strokeWidth="0.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="w-2 h-2"
+              >
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+          )}
         </div>
         <div className="w-4 h-8 bg-slate-700 rounded-sm overflow-hidden relative">
           {/* Espaço vazio na parte superior */}
@@ -114,6 +140,27 @@ const StationCard = ({
             className={`w-full ${getColor()} absolute bottom-0 left-0 right-0 transition-all duration-500`}
             style={{ height: `${percentage}%` }}
           />
+          {/* Ícone de água quando detectada */}
+          {hasWater && (
+            <div 
+              className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
+              style={{ height: '30%' }}
+              title={`Água detectada: ${tank.apiData?.QuantidadeDeAgua.toLocaleString()}L`}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="#38bdf8" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="w-3 h-3 drop-shadow-md"
+              >
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+          )}
         </div>
         <span className="text-xs text-slate-400">{percentage.toFixed(0)}%</span>
       </div>

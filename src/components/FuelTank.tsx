@@ -10,16 +10,21 @@ interface FuelTankProps {
   onSelect: (selected: boolean) => void;
   quantity: number;
   onQuantityChange: (quantity: number) => void;
+  waterAmount?: number; // Quantidade de água detectada no tanque
 }
 
-const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantity, onQuantityChange }: FuelTankProps) => {
+const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantity, onQuantityChange, waterAmount = 0 }: FuelTankProps) => {
   const percentage = (current / capacity) * 100;
   const available = capacity - current;
   
   const getStatus = () => {
+    // Priorizar alerta de água sobre outros status
+    if (waterAmount > 0) return { color: 'blue', label: 'Alerta', glow: 'glow-blue', animate: 'animate-pulse' };
+    
+    // Status baseados no nível de combustível
     if (percentage < 20) return { color: 'red', label: 'Crítico', glow: 'glow-red', animate: 'animate-pulse-emerald' };
     if (percentage < 50) return { color: 'amber', label: 'Atenção', glow: 'glow-amber', animate: '' };
-    return { color: 'emerald', label: 'OK', glow: 'glow-emerald', animate: '' };
+    return { color: 'emerald', label: 'Operacional', glow: 'glow-emerald', animate: '' };
   };
 
   const status = getStatus();
@@ -41,6 +46,7 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
     switch (status.color) {
       case 'red': return 'bg-gradient-to-r from-red-600 to-red-400';
       case 'amber': return 'bg-gradient-to-r from-amber-600 to-amber-400';
+      case 'blue': return 'bg-gradient-to-r from-blue-600 to-blue-400';
       default: return 'bg-gradient-to-r from-emerald-600 to-emerald-400';
     }
   };
@@ -79,6 +85,27 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
               className={`w-full ${getProgressColor()} absolute bottom-0 left-0 right-0 transition-all duration-500`}
               style={{ height: `${percentage}%` }}
             />
+            {/* Ícone de água quando detectada */}
+            {waterAmount > 0 && (
+              <div 
+                className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
+                style={{ height: '30%' }}
+                title={`Água detectada: ${waterAmount.toLocaleString()}L`}
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="#38bdf8" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  className="w-3 h-3 drop-shadow-md"
+                >
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+              </div>
+            )}
           </div>
           
           {/* Barra de progresso horizontal */}

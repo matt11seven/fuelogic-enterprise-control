@@ -8,6 +8,10 @@ export interface Tank {
   type: string;
   current: number;
   capacity: number;
+  empty: number;
+  waterAmount: number;
+  temperature: number;
+  date: string;
   apiData?: TankData; // Dados completos da API para uso na visualização expandida
 }
 
@@ -40,6 +44,10 @@ export function useTankData() {
             type: tank.Produto.trim(),
             current: tank.QuantidadeAtual,
             capacity: tank.CapacidadeDoTanque,
+            empty: tank.QuantidadeVazia,
+            waterAmount: tank.QuantidadeDeAgua,
+            temperature: tank.Temperatura,
+            date: tank.DataMedicao,
             apiData: tank // Incluir dados completos da API para cada tanque
           }))
         };

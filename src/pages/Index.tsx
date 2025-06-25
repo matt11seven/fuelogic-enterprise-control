@@ -5,8 +5,9 @@ import Header from "@/components/Header";
 import MetricsCards from "@/components/MetricsCards";
 import StationCard from "@/components/StationCard";
 import OrderButton from "@/components/OrderButton";
+import FuelTank from "@/components/FuelTank";
 import { useTankData } from "@/hooks/use-tank-data";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, AlertCircle, CheckCircle, Droplet } from "lucide-react";
 
 const Index = () => {
   const [selectedTanks, setSelectedTanks] = useState<Record<string, { selected: boolean; quantity: number }>>({});
@@ -55,14 +56,41 @@ const Index = () => {
 
   return (
     <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <Header />
-        <MetricsCards />
+        
+        <MetricsCards stations={stations} />
         
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-emerald-400">Postos Monitorados</h2>
-            <div className="text-sm text-slate-400">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-emerald-400">Postos Monitorados</h2>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span className="text-sm text-slate-900 dark:text-slate-400 flex items-center gap-1">
+                  <Droplet className="h-3 w-3" /> Alerta
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-sm text-slate-900 dark:text-slate-400 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> Crítico
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                <span className="text-sm text-slate-900 dark:text-slate-400 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" /> Atenção
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <span className="text-sm text-slate-900 dark:text-slate-400 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" /> Operacional
+                </span>
+              </div>
+            </div>
+            <div className="text-sm text-slate-900 dark:text-slate-400">
               {stations ? `${stations.length} postos ativos` : 'Carregando...'}
             </div>
           </div>

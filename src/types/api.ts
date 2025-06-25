@@ -19,3 +19,21 @@ export interface TankData {
   NivelEmPercentualComTolerancia: number;
   IdUnidade: number;
 }
+
+// Adaptação da API para os componentes da UI
+export interface StationData {
+  id: string;
+  name: string;
+  address: string;
+  tanks: {
+    id: string;
+    code: string;
+    type: string;
+    current: number;
+    capacity: number;
+    empty: number;
+    waterAmount: number;
+    temperature: number;
+    date: string;
+  }[];
+}

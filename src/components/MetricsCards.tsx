@@ -1,5 +1,6 @@
 
-import { AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
+import { AlertTriangle, TrendingUp, CheckCircle, Droplet } from "lucide-react";
+import { Station } from "@/hooks/use-tank-data";
 
 interface MetricCardProps {
   title: string;
@@ -11,11 +12,15 @@ interface MetricCardProps {
   glowClass: string;
 }
 
+interface MetricsCardsProps {
+  stations?: Station[];
+}
+
 const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, glowClass }: MetricCardProps) => (
   <div className={`metric-card border-l-4 ${borderColor} ${glowClass} ${bgGradient}`}>
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-slate-400 text-sm font-semibold uppercase tracking-wide">{title}</p>
+        <p className="text-slate-900 dark:text-slate-400 text-sm font-semibold uppercase tracking-wide">{title}</p>
         <p className={`text-4xl font-bold ${color} text-shadow`}>{value}</p>
       </div>
       <div className={`p-4 rounded-xl ${color === 'text-red-400' ? 'bg-red-500/20' : color === 'text-amber-400' ? 'bg-amber-500/20' : 'bg-emerald-500/20'}`}>
@@ -25,11 +30,38 @@ const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, 
   </div>
 );
 
-const MetricsCards = () => {
+const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
+  // Calcular a quantidade de tanques em cada status
+  let alertaCount = 0;
+  let criticoCount = 0;
+  let atencaoCount = 0;
+  let operacionalCount = 0;
+  
+  // Percorrer todos os tanques de todas as estações
+  stations.forEach(station => {
+    station.tanks.forEach(tank => {
+      const percentage = (tank.current / tank.capacity) * 100;
+      
+      if (tank.waterAmount > 0) {
+        // Tanques com água têm prioridade como Alerta
+        alertaCount++;
+      } else if (percentage < 20) {
+        // Tanques abaixo de 20% são críticos
+        criticoCount++;
+      } else if (percentage < 50) {
+        // Tanques entre 20% e 50% estão em atenção
+        atencaoCount++;
+      } else {
+        // Tanques acima de 50% estão operacionais
+        operacionalCount++;
+      }
+    });
+  });
+
   const metrics = [
     {
       title: "Críticos",
-      value: 3,
+      value: criticoCount,
       icon: AlertTriangle,
       color: "text-red-400",
       bgGradient: "bg-gradient-to-br from-red-900/20 to-red-800/10",
@@ -38,7 +70,7 @@ const MetricsCards = () => {
     },
     {
       title: "Atenção", 
-      value: 7,
+      value: atencaoCount,
       icon: TrendingUp,
       color: "text-amber-400",
       bgGradient: "bg-gradient-to-br from-amber-900/20 to-amber-800/10",
@@ -47,7 +79,7 @@ const MetricsCards = () => {
     },
     {
       title: "Operacionais",
-      value: 24,
+      value: operacionalCount,
       icon: CheckCircle,
       color: "text-emerald-400",
       bgGradient: "bg-gradient-to-br from-emerald-900/20 to-emerald-800/10",
@@ -55,13 +87,13 @@ const MetricsCards = () => {
       glowClass: "glow-emerald"
     },
     {
-      title: "Ordem Ativa",
-      value: 1,
-      icon: TrendingUp,
-      color: "text-emerald-400",
-      bgGradient: "bg-gradient-to-br from-emerald-900/30 to-emerald-800/20",
-      borderColor: "border-emerald-400",
-      glowClass: "glow-emerald"
+      title: "Alerta",
+      value: alertaCount,
+      icon: Droplet,
+      color: "text-blue-400",
+      bgGradient: "bg-gradient-to-br from-blue-900/30 to-blue-800/20",
+      borderColor: "border-blue-400",
+      glowClass: "glow-blue"
     }
   ];
 

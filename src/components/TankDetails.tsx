@@ -95,55 +95,72 @@ const TankDetails = ({ tank, onClose, compact = false }: TankDetailsProps) => {
             className="p-1 hover:bg-slate-700/50 rounded-full transition-colors"
             aria-label="Fechar detalhes"
           >
-            <X size={18} className="text-slate-400" />
+            <X size={18} className="text-slate-700 dark:text-slate-400" />
           </button>
         )}
       </div>
 
       <div className={`details-grid grid grid-cols-1 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-4`}>
         <div className={`detail-card border bg-gradient-to-b ${getStatusClass()} rounded-lg p-4`}>
-          <h4 className="text-slate-400 text-sm font-medium mb-1">Volume Atual</h4>
-          <div className="value text-white font-bold text-xl">
+          <h4 className="text-slate-700 dark:text-slate-400 text-sm font-medium mb-1">Volume Atual</h4>
+          <div className="value text-slate-900 dark:text-white font-bold text-xl">
             {tank.QuantidadeAtual.toLocaleString(undefined, {maximumFractionDigits: 0})}L
-            <span className="text-sm font-normal text-slate-400 ml-2">
+            <span className="text-sm font-normal text-slate-700 dark:text-slate-400 ml-2">
               ({tank.NivelEmPercentual.toFixed(1)}%)
             </span>
           </div>
         </div>
         
         <div className="detail-card border border-slate-700/50 bg-gradient-to-b from-slate-900/50 to-transparent rounded-lg p-4">
-          <h4 className="text-slate-400 text-sm font-medium mb-1">Temperatura</h4>
-          <div className="value text-white font-bold text-xl">
+          <h4 className="text-slate-700 dark:text-slate-400 text-sm font-medium mb-1">Temperatura</h4>
+          <div className="value text-slate-900 dark:text-white font-bold text-xl">
             {tank.Temperatura.toFixed(1)}°C
           </div>
         </div>
         
         <div className="detail-card border border-slate-700/50 bg-gradient-to-b from-slate-900/50 to-transparent rounded-lg p-4">
-          <h4 className="text-slate-400 text-sm font-medium mb-1">Capacidade Total</h4>
-          <div className="value text-white font-bold text-xl">
+          <h4 className="text-slate-700 dark:text-slate-400 text-sm font-medium mb-1">Capacidade Total</h4>
+          <div className="value text-slate-900 dark:text-white font-bold text-xl">
             {tank.CapacidadeDoTanque.toLocaleString(undefined, {maximumFractionDigits: 0})}L
           </div>
         </div>
         
         <div className="detail-card border border-slate-700/50 bg-gradient-to-b from-slate-900/50 to-transparent rounded-lg p-4">
-          <h4 className="text-slate-400 text-sm font-medium mb-1">Volume Vazio</h4>
-          <div className="value text-white font-bold text-xl">
+          <h4 className="text-slate-700 dark:text-slate-400 text-sm font-medium mb-1">Volume Vazio</h4>
+          <div className="value text-slate-900 dark:text-white font-bold text-xl">
             {tank.QuantidadeVazia.toLocaleString(undefined, {maximumFractionDigits: 0})}L
           </div>
         </div>
 
         {tank.QuantidadeDeAgua > 0 && (
-          <div className="detail-card border border-red-700/50 bg-gradient-to-b from-red-950/30 to-transparent rounded-lg p-4">
-            <h4 className="text-red-400 text-sm font-medium mb-1">Água Detectada</h4>
-            <div className="value text-white font-bold text-xl">
+          <div className="detail-card border border-blue-700/50 bg-gradient-to-b from-blue-950/30 to-transparent rounded-lg p-4 relative overflow-hidden">
+            <div className="absolute top-3 right-3">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="#38bdf8" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="w-5 h-5 drop-shadow-md animate-pulse"
+              >
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+            <h4 className="text-blue-400 text-sm font-medium mb-1 flex items-center">
+              <span>Água Detectada</span>
+              <span className="ml-1 text-xs text-blue-300/60">(Atenção!)</span>
+            </h4>
+            <div className="value text-blue-300 font-bold text-xl">
               {tank.QuantidadeDeAgua.toLocaleString(undefined, {maximumFractionDigits: 1})}L
             </div>
           </div>
         )}
         
         <div className="detail-card border border-slate-700/50 bg-gradient-to-b from-slate-900/50 to-transparent rounded-lg p-4">
-          <h4 className="text-slate-400 text-sm font-medium mb-1">Última Medição</h4>
-          <div className="value text-white font-medium">
+          <h4 className="text-slate-700 dark:text-slate-400 text-sm font-medium mb-1">Última Medição</h4>
+          <div className="value text-slate-900 dark:text-white font-medium">
             {formatMeasurementDate(tank.DataMedicao)}
           </div>
         </div>
