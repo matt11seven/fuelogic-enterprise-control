@@ -79,6 +79,17 @@ router.post('/login', async (req, res) => {
     // Remover senha do objeto antes de enviar
     delete userData.password_hash;
     
+    // Log detalhado apenas em desenvolvimento
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG] Dados do usuário após autenticação:', {
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+        api_key_exists: !!userData.api_key
+      });
+    }
+    
     // Gerar token JWT
     const token = jwt.sign(
       { id: userData.id, username: userData.username, role: userData.role },
@@ -90,6 +101,10 @@ router.post('/login', async (req, res) => {
     await db.logAccess(userData.id, 'login', req.ip, req.get('user-agent'));
     
     // Mapeamento explícito, garantindo que api_key do banco seja renomeado para apiKey na resposta
+    if (process.env.NODE_ENV === 'development' && !userData.api_key) {
+      console.warn('[AVISO] api_key ausente no objeto userData! Verifique a consulta SQL e o banco.');
+    }
+    
     return res.json({
       id: userData.id,
       username: userData.username,

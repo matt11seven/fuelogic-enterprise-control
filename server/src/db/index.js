@@ -16,14 +16,28 @@ class DbService {
     if (this.isConnected) return;
     
     try {
-      this.pool = new Pool({
+      const dbConfig = {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
         database: process.env.DB_NAME || 'fuelogic_enterprise',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD,
         ssl: process.env.DB_SSL === 'true' ? true : false,
-      });
+      };
+
+      // Log de conexão apenas em desenvolvimento
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEBUG] Tentando conectar ao banco com configuração:', {
+          host: dbConfig.host,
+          port: dbConfig.port,
+          database: dbConfig.database,
+          user: dbConfig.user,
+          ssl: dbConfig.ssl
+          // Omitindo senha por segurança
+        });
+      }
+      
+      this.pool = new Pool(dbConfig);
       
       // Testar conexão
       const client = await this.pool.connect();
@@ -76,10 +90,28 @@ class DbService {
         WHERE u.username = $1 AND u.is_active = true
       `;
       
+      // Log apenas em ambiente de desenvolvimento
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEBUG] Executando autenticação para usuário: ${username}`);
+        console.log('[DEBUG] Query SQL:', query.replace(/\s+/g, ' ').trim());
+      }
+      
       const result = await this.query(query, [username]);
       
       if (result.rows.length === 0) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[DEBUG] Usuário ${username} não encontrado no banco`);
+        }
         return null; // Usuário não encontrado
+      }
+      
+      // Em desenvolvimento, verificar se api_key está presente
+      if (process.env.NODE_ENV === 'development') {
+        const user = result.rows[0];
+        console.log(`[DEBUG] Usuário ${username} encontrado. Dados retornados:`, {
+          colunas: Object.keys(user),
+          temApiKey: !!user.api_key
+        });
       }
       
       return result.rows[0];
