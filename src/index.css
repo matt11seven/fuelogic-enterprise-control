@@ -7,46 +7,53 @@
 
 @layer base {
   :root {
-    /* Fundo principal: Cinza muito claro com toque esverdeado */
-    --background: 123 38% 64%;
-    /* Títulos importantes: Preto/cinza escuro forte */
-    --foreground: 220 25% 15%;
+    /* Light Theme - Nova paleta profissional */
+    --background: 210 20% 98%;
+    --foreground: 220 13% 9%;
 
-    /* Cores para cards */
-    --card: 160 15% 96%;
-    --card-foreground: 220 25% 15%;
+    /* Cards com fundo mais suave */
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 9%;
 
-    /* Cores para popovers */
-    --popover: 160 15% 96%;
-    --popover-foreground: 220 25% 15%;
+    /* Popovers com sombra sutil */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 9%;
 
-    /* Cores primárias para botões e elementos de destaque */
+    /* Primary com verde esmeralda mais sofisticado */
     --primary: 160 84% 39%;
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Cores secundárias para botões e elementos menos importantes */
-    --secondary: 160 10% 90%;
-    /* Textos secundários: Cinza médio */
-    --secondary-foreground: 220 15% 40%;
+    /* Secondary com cinza mais elegante */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 220 13% 9%;
 
-    /* Cores para elementos atenuados */
-    --muted: 160 15% 92%;
-    /* Labels e detalhes: Cinza mais claro */
-    --muted-foreground: 220 10% 60%;
+    /* Muted com tons mais suaves */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 13% 45%;
 
-    /* Cores para elementos de destaque */
-    --accent: 160 20% 88%;
-    --accent-foreground: 220 25% 20%;
+    /* Accent com verde claro */
+    --accent: 160 60% 95%;
+    --accent-foreground: 160 84% 25%;
 
-    /* Cores para elementos de alerta */
+    /* Destructive mantido */
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    /* Cores para bordas e inputs */
-    --border: 160 15% 90%;
-    --input: 160 15% 90%;
+    /* Borders mais sutis */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 160 84% 39%;
     --radius: 0.75rem;
+
+    /* Sidebar colors para o tema claro */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 13% 9%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 220 13% 9%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
@@ -77,6 +84,15 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 160 84% 39%;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 220 15% 6%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 160 84% 39%;
   }
 }
 
@@ -88,10 +104,16 @@
   body {
     @apply bg-background text-foreground min-h-screen;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv03', 'cv04', 'cv11';
   }
 
   .dark body {
     @apply bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900;
+  }
+
+  /* Light theme com gradient sutil e profissional */
+  .light body {
+    @apply bg-gradient-to-br from-slate-50 via-emerald-50/30 to-slate-100/50;
   }
 
   html {
@@ -101,7 +123,7 @@
 
 @layer components {
   .glass-card {
-    @apply backdrop-blur-md rounded-xl shadow-2xl;
+    @apply backdrop-blur-md rounded-xl shadow-lg transition-all duration-300;
   }
 
   .dark .glass-card {
@@ -109,7 +131,9 @@
   }
 
   .light .glass-card {
-    @apply bg-card border border-border shadow-md;
+    @apply bg-white/80 border border-emerald-100/60 shadow-xl shadow-emerald-500/5;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .glass-card-hover {
@@ -121,15 +145,36 @@
   }
 
   .light .glass-card-hover:hover {
-    @apply bg-emerald-50/80 border-emerald-200 shadow-lg shadow-emerald-200/50;
+    @apply bg-white/90 border-emerald-200/80 shadow-2xl shadow-emerald-500/15;
+    transform: translateY(-2px) scale(1.01);
   }
 
   .metric-card {
-    @apply glass-card p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl;
+    @apply glass-card p-6 transition-all duration-300 hover:scale-105;
+  }
+
+  .light .metric-card {
+    @apply shadow-lg shadow-slate-200/60;
+  }
+
+  .dark .metric-card {
+    @apply hover:shadow-2xl;
+  }
+
+  .light .metric-card:hover {
+    @apply shadow-xl shadow-emerald-200/40;
   }
 
   .fuel-progress {
-    @apply h-2 bg-slate-800 rounded-full overflow-hidden;
+    @apply h-2 rounded-full overflow-hidden;
+  }
+
+  .dark .fuel-progress {
+    @apply bg-slate-800;
+  }
+
+  .light .fuel-progress {
+    @apply bg-slate-200/60;
   }
 
   .fuel-progress-bar {
@@ -139,23 +184,86 @@
   .hex-badge {
     @apply w-8 h-8 flex items-center justify-center text-xs font-bold rounded-md;
   }
+
+  /* Melhorias para inputs no tema claro */
+  .light .glass-card-input {
+    @apply bg-white/60 border-slate-200/80 text-slate-800 placeholder:text-slate-500;
+    backdrop-filter: blur(8px);
+  }
+
+  .light .glass-card-input:focus {
+    @apply bg-white/80 border-emerald-300/60 ring-2 ring-emerald-500/20;
+  }
 }
 
 @layer utilities {
   .text-shadow {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .light .text-shadow {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 
   .glow-emerald {
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
   }
 
+  .light .glow-emerald {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15), 0 0 40px rgba(16, 185, 129, 0.1);
+  }
+
   .glow-red {
     box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
   }
 
+  .light .glow-red {
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.15), 0 0 40px rgba(220, 38, 38, 0.1);
+  }
+
   .glow-amber {
     box-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
+  }
+
+  .light .glow-amber {
+    box-shadow: 0 4px 20px rgba(217, 119, 6, 0.15), 0 0 40px rgba(217, 119, 6, 0.1);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .light .glow-blue {
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15), 0 0 40px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Gradientes melhorados para o tema claro */
+  .light .bg-gradient-emerald {
+    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  }
+
+  .light .bg-gradient-emerald:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  }
+
+  /* Scrollbar personalizada para tema claro */
+  .light ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .light ::-webkit-scrollbar-track {
+    @apply bg-slate-100/50;
+    border-radius: 10px;
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    @apply bg-emerald-300/60 hover:bg-emerald-400/80;
+    border-radius: 10px;
+  }
+
+  .light ::-webkit-scrollbar-thumb:hover {
+    @apply bg-emerald-400/80;
   }
 }
 
@@ -164,7 +272,6 @@
   margin-top: 16px;
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
@@ -173,11 +280,14 @@
 
 .dark .tank-details-expansion {
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .light .tank-details-expansion {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .tank-details-expansion.is-visible {
@@ -186,9 +296,53 @@
 }
 
 .detail-card {
-  transition: transform 0.2s ease-out;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
 .detail-card:hover {
   transform: translateY(-2px);
+}
+
+.light .detail-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Melhorias específicas para botões no tema claro */
+.light .btn-primary {
+  @apply bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400;
+  @apply text-white font-semibold shadow-lg shadow-emerald-500/25;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.light .btn-primary:hover {
+  @apply shadow-xl shadow-emerald-500/35;
+  transform: translateY(-1px);
+}
+
+/* Melhorias para cards de métricas no tema claro */
+.light .metric-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Status indicators mais visíveis no tema claro */
+.light .status-indicator {
+  @apply shadow-md;
+}
+
+.light .status-critical {
+  @apply bg-red-50 text-red-700 border-red-200;
+}
+
+.light .status-warning {
+  @apply bg-amber-50 text-amber-700 border-amber-200;
+}
+
+.light .status-success {
+  @apply bg-emerald-50 text-emerald-700 border-emerald-200;
+}
+
+.light .status-info {
+  @apply bg-blue-50 text-blue-700 border-blue-200;
 }
