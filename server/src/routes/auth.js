@@ -89,8 +89,13 @@ router.post('/login', async (req, res) => {
     // Registrar acesso
     await db.logAccess(userData.id, 'login', req.ip, req.get('user-agent'));
     
+    // Mapeamento explícito, garantindo que api_key do banco seja renomeado para apiKey na resposta
     return res.json({
-      ...userData,
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role,
+      apiKey: userData.api_key, // Garantindo que api_key seja mapeado para apiKey
       token
     });
   } catch (error) {

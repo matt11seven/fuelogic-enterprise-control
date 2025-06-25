@@ -41,30 +41,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Função para buscar a API key (com chamada à API)
   const getApiKey = async (): Promise<string | null> => {
-    // Verificar primeiro se existe no .env
-    const envApiKey = import.meta.env.VITE_API_KEY;
-    
-    if (envApiKey) {
-      return envApiKey;
-    }
-    
-    // Se não encontrou no .env, verificar usuário logado
+    // IMPORTANTE: Sempre priorizar a apiKey do usuário logado (do banco de dados)
     if (user?.apiKey) {
+      console.log('[INFO] Usando apiKey do usuário logado');
       return user.apiKey;
     }
     
     try {
       // Tentar obter a API key do usuário master via API
+      console.log('[INFO] Tentando obter apiKey via API do backend');
       const masterKey = await authApi.getMasterApiKey();
       if (masterKey) {
         return masterKey;
       }
     } catch (error) {
-      console.error('Erro ao obter API key do master:', error);
+      console.error('[ERRO] Falha ao obter API key do master:', error);
     }
     
-    // Fallback para modo de emergência
-    return EMERGENCY_CREDENTIALS.apiKey;
+    // Apenas como último recurso, usar a variável de ambiente ou credencial de emergência
+    const envApiKey = import.meta.env.VITE_API_KEY;
+    if (envApiKey) {
+      console.log('[AVISO] Usando apiKey da variável de ambiente (não recomendado)');
+      return envApiKey;
+    }
+    
+    console.log('[AVISO] Nenhuma apiKey válida encontrada');
+    return null; // Não temos uma apiKey válida
   };
 
   // Verificar usuário no localStorage e apiKey no .env ao iniciar
@@ -101,6 +103,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Para modo emergência, verificar se as variáveis de ambiente estão configuradas
       if (hasEmergencyLogin && username === EMERGENCY_CREDENTIALS.username && password === EMERGENCY_CREDENTIALS.password) {
+        // ATENÇÃO: No modo de emergência, verificar se realmente temos uma apiKey válida
+        if (!EMERGENCY_CREDENTIALS.apiKey) {
+          setError('API Key de emergência não configurada');
+          console.error('Login emergencial falhou: apiKey não configurada');
+          return false;
+        }
+        
         const emergencyUser = {
           id: "emergency-user",
           username: EMERGENCY_CREDENTIALS.username,
@@ -114,7 +123,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         localStorage.setItem('fuelogic_user', JSON.stringify(emergencyUser));
         setApiKey(EMERGENCY_CREDENTIALS.apiKey);
         
-        console.log('Login emergencial realizado com sucesso');
+        console.log('[INFO] Login emergencial realizado com sucesso');
+        console.log('[DEBUG] apiKey emergencial configurada:', !!EMERGENCY_CREDENTIALS.apiKey);
         return true;
       }
       
@@ -123,12 +133,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const credentials: LoginCredentials = { username, password };
         const userData = await authApi.login(credentials);
         
+        // Verificar se recebemos uma apiKey válida do backend
+        if (!userData.apiKey) {
+          console.warn('[AVISO] Login bem-sucedido mas sem apiKey do usuário. Verifique se a coluna api_key está sendo retornada corretamente pelo backend.');
+        } else {
+          console.log('[INFO] apiKey obtida do usuário: ', !!userData.apiKey);
+        }
+        
         // Usuário autenticado com sucesso
         setUser(userData);
         localStorage.setItem('fuelogic_user', JSON.stringify(userData));
-        setApiKey(userData.apiKey || await getApiKey());
         
-        console.log('Login via API realizado com sucesso');
+        // Usamos diretamente a apiKey do usuário, sem fallbacks
+        setApiKey(userData.apiKey);
+        
+        console.log('[INFO] Login via API realizado com sucesso');
         return true;
       } catch (apiError: any) {
         // Verificar o tipo de erro
@@ -161,9 +180,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
     localStorage.removeItem('fuelogic_user');
     
-    // Manter API key se vier do .env
-    const envApiKey = import.meta.env.VITE_API_KEY;
-    setApiKey(envApiKey || null);
+    // Limpar completamente a apiKey ao fazer logout
+    // Não queremos manter qualquer credencial após o logout
+    setApiKey(null);
+    
+    console.log('[INFO] Logout realizado, apiKey removida');
   };
 
   return (
