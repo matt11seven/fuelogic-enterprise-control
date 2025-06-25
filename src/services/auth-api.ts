@@ -44,7 +44,8 @@ export const login = async (credentials: LoginCredentials): Promise<User> => {
  */
 export const getMasterApiKey = async (): Promise<string | null> => {
   try {
-    const response = await authApi.get('/master-api-key');
+    // Endpoint renomeado para evitar bloqueios por adblockers/extensões de privacidade
+    const response = await authApi.get('/system-settings');
     return response.data.apiKey;
   } catch (error) {
     console.error('Erro ao obter API key do usuário master:', error);

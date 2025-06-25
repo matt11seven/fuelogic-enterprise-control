@@ -107,7 +107,7 @@ router.post('/login', async (req, res) => {
 /**
  * Rota para obter a API key do usuário master
  */
-router.get('/master-api-key', async (req, res) => {
+router.get('/system-settings', async (req, res) => {
   try {
     const apiKey = await db.getMasterApiKey();
     
