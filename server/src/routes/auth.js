@@ -79,15 +79,25 @@ router.post('/login', async (req, res) => {
     // Remover senha do objeto antes de enviar
     delete userData.password_hash;
     
-    // Log detalhado apenas em desenvolvimento
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[DEBUG] Dados do usuário após autenticação:', {
-        id: userData.id,
-        username: userData.username,
-        email: userData.email,
-        role: userData.role,
-        api_key_exists: !!userData.api_key
-      });
+    // Log detalhado independente do ambiente (importante para diagnóstico)
+    console.log('[DEBUG] Dados do usuário após autenticação:', {
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role,
+      api_key_exists: !!userData.api_key,
+      api_key_type: typeof userData.api_key,
+      api_key_length: userData.api_key ? userData.api_key.length : 0,
+      api_key_preview: userData.api_key ? `${userData.api_key.substring(0, 5)}...` : 'n/a'
+    });
+    
+    // Garantir que o campo api_key não seja perdido ou mal interpretado
+    const apiKey = userData.api_key;
+    
+    // Certificar que o objeto userData seja consistente
+    if (!userData.api_key && apiKey) {
+      userData.api_key = apiKey;
+      console.log('[INFO] Campo api_key preservado e restaurado no objeto userData');
     }
     
     // Gerar token JWT
@@ -101,18 +111,29 @@ router.post('/login', async (req, res) => {
     await db.logAccess(userData.id, 'login', req.ip, req.get('user-agent'));
     
     // Mapeamento explícito, garantindo que api_key do banco seja renomeado para apiKey na resposta
-    if (process.env.NODE_ENV === 'development' && !userData.api_key) {
+    if (!userData.api_key) {
       console.warn('[AVISO] api_key ausente no objeto userData! Verifique a consulta SQL e o banco.');
     }
     
-    return res.json({
+    // Criando uma cópia separada do objeto de resposta para evitar problemas de referência
+    const responseData = {
       id: userData.id,
       username: userData.username,
       email: userData.email,
       role: userData.role,
-      apiKey: userData.api_key, // Garantindo que api_key seja mapeado para apiKey
+      apiKey: userData.api_key, // Mapeamento explícito
       token
+    };
+    
+    // Verificação dupla para garantir integridade
+    console.log('[DEBUG] Resposta final:', {
+      has_apiKey: !!responseData.apiKey,
+      apiKey_type: typeof responseData.apiKey,
+      apiKey_length: responseData.apiKey ? responseData.apiKey.length : 0,
+      apiKey_preview: responseData.apiKey ? `${responseData.apiKey.substring(0, 5)}...` : 'n/a'
     });
+    
+    return res.json(responseData);
   } catch (error) {
     console.error('Erro no login:', error);
     return res.status(500).json({ message: 'Erro interno do servidor' });
