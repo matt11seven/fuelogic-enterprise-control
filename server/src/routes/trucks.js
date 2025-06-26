@@ -132,17 +132,16 @@ router.post('/', async (req, res) => {
 
 // PUT /api/trucks/:id - Atualizar um caminhão existente
 router.put('/:id', async (req, res) => {
-  const client = await db.getClient();
-  
   try {
-    await client.query('BEGIN');
+    // Iniciar transação
+    await db.query('BEGIN');
     
     const userId = req.user.id;
     const truckId = req.params.id;
     const { name, driver_name, license_plate, capacity, observations, status } = req.body;
     
     // Buscar o caminhão atual para comparar alterações
-    const currentResult = await client.query(
+    const currentResult = await db.query(
       'SELECT * FROM trucks WHERE id = $1 AND user_id = $2',
       [truckId, userId]
     );
@@ -154,7 +153,7 @@ router.put('/:id', async (req, res) => {
     const currentTruck = currentResult.rows[0];
     
     // Atualizar o caminhão
-    const result = await client.query(
+    const result = await db.query(
       `UPDATE trucks 
        SET name = $1, 
            driver_name = $2, 
@@ -183,7 +182,7 @@ router.put('/:id', async (req, res) => {
     // Registrar apenas os campos que foram alterados
     for (const field of fieldsToTrack) {
       if (field.oldValue !== field.newValue) {
-        await client.query(
+        await db.query(
           `INSERT INTO truck_history 
            (truck_id, user_id, change_type, field_name, old_value, new_value) 
            VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -192,10 +191,10 @@ router.put('/:id', async (req, res) => {
       }
     }
     
-    await client.query('COMMIT');
+    await db.query('COMMIT');
     res.json(updatedTruck);
   } catch (error) {
-    await client.query('ROLLBACK');
+    await db.query('ROLLBACK');
     console.error('Erro ao atualizar caminhão:', error);
     
     // Verificar se é erro de violação de chave única (placa já cadastrada)
@@ -204,55 +203,78 @@ router.put('/:id', async (req, res) => {
     }
     
     res.status(500).json({ message: 'Erro ao atualizar caminhão' });
-  } finally {
-    client.release();
   }
 });
 
 // DELETE /api/trucks/:id - Excluir um caminhão
 router.delete('/:id', async (req, res) => {
-  const client = await db.getClient();
-  
   try {
-    await client.query('BEGIN');
+    // Log para debug em produção
+    console.log(`[DEBUG] Iniciando exclusão do caminhão ID: ${req.params.id}`);
+    
+    // Iniciar transação
+    await db.query('BEGIN');
     
     const userId = req.user.id;
     const truckId = req.params.id;
     
+    console.log(`[DEBUG] Usuário ID: ${userId}, Caminhão ID: ${truckId}`);
+    
     // Verificar se o caminhão pertence ao usuário e obter dados para histórico
-    const checkResult = await client.query(
+    const checkResult = await db.query(
       'SELECT * FROM trucks WHERE id = $1 AND user_id = $2',
       [truckId, userId]
     );
     
     if (checkResult.rows.length === 0) {
+      console.log(`[INFO] Caminhão não encontrado - ID: ${truckId}, Usuário: ${userId}`);
       return res.status(404).json({ message: 'Caminhão não encontrado' });
     }
     
     const truckData = checkResult.rows[0];
+    console.log(`[DEBUG] Dados do caminhão encontrados: ${JSON.stringify(truckData)}`);
     
-    // Registrar a exclusão no histórico antes de excluir o caminhão
-    await client.query(
-      `INSERT INTO truck_history 
-       (truck_id, user_id, change_type, field_name, old_value, new_value) 
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [truckId, userId, 'delete', null, JSON.stringify(truckData), null]
-    );
-    
-    // Excluir o caminhão
-    await client.query(
-      'DELETE FROM trucks WHERE id = $1 AND user_id = $2',
-      [truckId, userId]
-    );
-    
-    await client.query('COMMIT');
-    res.status(204).send();
+    try {
+      // Registrar a exclusão no histórico antes de excluir o caminhão
+      await db.query(
+        `INSERT INTO truck_history 
+         (truck_id, user_id, change_type, field_name, old_value, new_value) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [truckId, userId, 'delete', null, JSON.stringify(truckData), null]
+      );
+      console.log(`[DEBUG] Histórico de exclusão registrado com sucesso`);
+      
+      // Excluir o caminhão
+      await db.query('DELETE FROM trucks WHERE id = $1 AND user_id = $2', [truckId, userId]);
+      console.log(`[DEBUG] Caminhão excluído com sucesso`);
+      
+      await db.query('COMMIT');
+      console.log(`[DEBUG] Transação concluída com sucesso`);
+      
+      res.json({ message: 'Caminhão excluído com sucesso' });
+    } catch (historyError) {
+      // Tratamento específico para erros durante o processo de exclusão
+      console.error('[ERRO] Falha ao processar exclusão:', historyError);
+      await db.query('ROLLBACK');
+      res.status(500).json({ 
+        message: 'Erro ao processar exclusão do caminhão', 
+        detail: historyError.message || 'Erro desconhecido no processamento' 
+      });
+    }
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Erro ao excluir caminhão:', error);
-    res.status(500).json({ message: 'Erro ao excluir caminhão' });
-  } finally {
-    client.release();
+    // Tratamento para erros gerais
+    console.error('[ERRO] Falha geral ao excluir caminhão:', error);
+    try {
+      await db.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error('[ERRO] Falha ao realizar rollback:', rollbackError);
+    }
+    
+    res.status(500).json({ 
+      message: 'Erro ao excluir caminhão', 
+      detail: error.message || 'Erro desconhecido',
+      code: error.code || 'UNKNOWN_ERROR'
+    });
   }
 });
 
