@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import MetricsCards from "@/components/MetricsCards";
-import StationCard from "@/components/StationCard";
+import StationContainer from "@/components/StationContainer";
 import OrderButton from "@/components/OrderButton";
 import FuelTank from "@/components/FuelTank";
 import PurchaseSuggestionModal from "@/components/PurchaseSuggestionModal";
@@ -112,24 +111,26 @@ const Index = () => {
               </p>
               <p className="text-slate-500 text-xs mt-4">{(error as Error).message}</p>
             </div>
-          ) : stations?.map(station => (
-            <StationCard
-              key={station.id}
-              id={station.id}
-              name={station.name}
-              address={station.address}
-              tanks={station.tanks}
+          ) : (
+            <StationContainer
+              stations={stations || []}
               onTankSelect={handleTankSelect}
               onQuantityChange={handleQuantityChange}
               selectedTanks={selectedTanks}
             />
-          ))}
+          )}
         </div>
 
-        <OrderButton 
-          selectedCount={selectedCount}
-          onProcessOrder={handleProcessOrder}
-        />
+        {selectedCount > 0 && (
+          <OrderButton 
+            selectedCount={selectedCount} 
+            totalLiters={Object.values(selectedTanks)
+              .filter(tank => tank.selected)
+              .reduce((total, tank) => total + tank.quantity, 0)
+            }
+            onProcessOrder={handleProcessOrder}
+          />
+        )}
       </div>
     </div>
   );
