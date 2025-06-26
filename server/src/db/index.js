@@ -150,6 +150,26 @@ class DbService {
   /**
    * Registra um acesso no log
    */
+  async updatePassword(userId, passwordHash) {
+    try {
+      const query = `UPDATE users SET password_hash = $2 WHERE id = $1`;
+      await this.query(query, [userId, passwordHash]);
+    } catch (error) {
+      console.error('Erro ao atualizar senha:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(userId) {
+    try {
+      const result = await this.query('SELECT * FROM users WHERE id = $1', [userId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar usuário por ID:', error);
+      throw error;
+    }
+  }
+
   async logAccess(userId, action, ipAddress, userAgent) {
     try {
       const query = `

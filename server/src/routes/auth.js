@@ -169,6 +169,39 @@ router.get('/system-settings', async (req, res) => {
 /**
  * Rota para registrar acesso no log
  */
+// Rota de alteração de senha
+router.post('/change-password', verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Senha atual e nova senha são obrigatórias' });
+    }
+
+    const userId = req.user.id;
+    const userData = await db.getUserById(userId);
+
+    if (!userData) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, userData.password_hash);
+    if (!isValid) {
+      return res.status(401).json({ message: 'Senha atual incorreta' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    await db.updatePassword(userId, newHash);
+
+    return res.json({ message: 'Senha alterada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+});
+
 router.post('/log-access', verifyToken, async (req, res) => {
   try {
     const { userId, action, ipAddress, userAgent } = req.body;

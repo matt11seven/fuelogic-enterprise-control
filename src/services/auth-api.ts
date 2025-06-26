@@ -73,8 +73,26 @@ export const logAccess = async (
   }
 };
 
+export const changePassword = async (
+  currentPassword: string,
+  newPassword: string,
+  token: string
+): Promise<void> => {
+  try {
+    await authApi.post(
+      '/change-password',
+      { currentPassword, newPassword },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (error: any) {
+    console.error('Erro ao alterar senha:', error);
+    throw error;
+  }
+};
+
 export default {
   login,
   getMasterApiKey,
-  logAccess
+  logAccess,
+  changePassword
 };
