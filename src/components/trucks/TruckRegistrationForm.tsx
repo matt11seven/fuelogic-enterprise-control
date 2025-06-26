@@ -40,7 +40,7 @@ const truckFormSchema = z.object({
   }),
   capacity: z.number()
     .min(1000, { message: "Capacidade mínima é 1000L" })
-    .max(30000, { message: "Capacidade máxima é 30000L" }),
+    .max(100000, { message: "Capacidade máxima é 100000L" }),
   observations: z.string().optional(),
   status: z.enum(["active", "inactive", "maintenance"]),
 });
