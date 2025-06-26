@@ -13,10 +13,10 @@ app.use(cors());
 app.use(express.json());
 
 // Rotas
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Rota de status para verificar se o servidor está online
-app.get('/status', (req, res) => {
+app.get('/api/status', (req, res) => {
   res.json({ status: 'online', timestamp: new Date().toISOString() });
 });
 
