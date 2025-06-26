@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import FuelTank from "./FuelTank";
@@ -111,18 +110,15 @@ const StationCard = ({
           <span className="text-xs sm:text-sm">{tank.code}</span>
           {hasWater && (
             <div 
-              className="absolute -top-1 -right-1 bg-blue-400 rounded-full w-3 h-3 border border-blue-900 flex items-center justify-center shadow-lg z-10"
+              className="absolute -bottom-1 -right-1 bg-blue-400 rounded-full w-4 h-4 border-2 border-blue-900 flex items-center justify-center shadow-lg z-10"
               title={`Água detectada: ${tank.apiData?.QuantidadeDeAgua.toLocaleString()}L`}
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 viewBox="0 0 24 24" 
-                fill="#38bdf8" 
-                stroke="#0c4a6e" 
-                strokeWidth="0.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className="w-2 h-2"
+                fill="#1e40af" 
+                stroke="none"
+                className="w-2.5 h-2.5"
               >
                 <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
               </svg>
@@ -140,27 +136,6 @@ const StationCard = ({
             className={`w-full ${getColor()} absolute bottom-0 left-0 right-0 transition-all duration-500`}
             style={{ height: `${percentage}%` }}
           />
-          {/* Ícone de água quando detectada */}
-          {hasWater && (
-            <div 
-              className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
-              style={{ height: '30%' }}
-              title={`Água detectada: ${tank.apiData?.QuantidadeDeAgua.toLocaleString()}L`}
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="#38bdf8" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className="w-2 h-2 sm:w-3 sm:h-3 drop-shadow-md"
-              >
-                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-              </svg>
-            </div>
-          )}
         </div>
         <span className="text-xs text-slate-400">{percentage.toFixed(0)}%</span>
       </div>
@@ -266,6 +241,7 @@ const StationCard = ({
                     onSelect={(selected) => onTankSelect(id, tank.id, selected)}
                     quantity={selectedTanks[`${id}-${tank.id}`]?.quantity || 0}
                     onQuantityChange={(quantity) => onQuantityChange(id, tank.id, quantity)}
+                    waterAmount={tank.apiData?.QuantidadeDeAgua}
                   />
                 ))}
             </div>
