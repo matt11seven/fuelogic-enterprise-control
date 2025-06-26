@@ -88,8 +88,8 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
             {/* Ícone de água quando detectada */}
             {waterAmount > 0 && (
               <div 
-                className="absolute bottom-0 left-0 right-0 flex items-center justify-center"
-                style={{ height: '30%' }}
+                className="absolute bottom-0 right-0 mb-[1px] mr-[1px]"
+                
                 title={`Água detectada: ${waterAmount.toLocaleString()}L`}
               >
                 <svg 
