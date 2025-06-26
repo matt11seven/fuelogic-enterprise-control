@@ -13,8 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Rotas
-// Monta rotas de autenticação com prefixo /api
-app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 
 // Rota de status para verificar se o servidor está online
 app.get('/status', (req, res) => {
