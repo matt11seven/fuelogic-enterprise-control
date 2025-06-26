@@ -18,6 +18,7 @@ export interface User {
   email: string | null;
   role: string;
   apiKey: string | null;
+  token: string;
 }
 
 // Interface para credenciais de login
