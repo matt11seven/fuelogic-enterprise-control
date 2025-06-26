@@ -102,13 +102,13 @@ const StationCard = ({
     return (
       <div 
         key={tank.id} 
-        className="flex flex-col items-center space-y-1 cursor-pointer hover:opacity-90 transition-opacity"
+        className="flex flex-col items-center space-y-1 cursor-pointer hover:opacity-90 transition-opacity min-w-[48px] flex-shrink-0"
         onClick={(e) => expandTankDetails(tank.id, e)}
         aria-expanded={isExpanded}
         title={`Clique para ${isExpanded ? 'fechar' : 'ver'} detalhes do tanque de ${tank.type}`}
       >
-        <div className={`hex-badge ${getCodeColor()} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative`}>
-          {tank.code}
+        <div className={`hex-badge ${getCodeColor()} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative w-7 h-7 sm:w-8 sm:h-8`}>
+          <span className="text-xs sm:text-sm">{tank.code}</span>
           {hasWater && (
             <div 
               className="absolute -top-1 -right-1 bg-blue-400 rounded-full w-3 h-3 border border-blue-900 flex items-center justify-center shadow-lg z-10"
@@ -129,7 +129,7 @@ const StationCard = ({
             </div>
           )}
         </div>
-        <div className="w-4 h-8 bg-slate-700 rounded-sm overflow-hidden relative">
+        <div className="w-3 h-6 sm:w-4 sm:h-8 bg-slate-700 rounded-sm overflow-hidden relative">
           {/* Espaço vazio na parte superior */}
           <div 
             className="w-full bg-slate-700 absolute bottom-0 left-0 right-0 transition-all duration-500"
@@ -155,7 +155,7 @@ const StationCard = ({
                 strokeWidth="2" 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
-                className="w-3 h-3 drop-shadow-md"
+                className="w-2 h-2 sm:w-3 sm:h-3 drop-shadow-md"
               >
                 <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
               </svg>
@@ -173,28 +173,34 @@ const StationCard = ({
   return (
     <div className="glass-card-hover">
       <div 
-        className="p-6 cursor-pointer" 
+        className="p-4 sm:p-6 cursor-pointer" 
         onClick={toggleStationExpansion}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4 flex-1">
-            <MapPin className="w-5 h-5 text-emerald-400" />
+        {/* Mobile-first layout - stack vertically on small screens */}
+        <div className="space-y-4">
+          {/* Station info section */}
+          <div className="flex items-start space-x-3 sm:space-x-4">
+            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <h3 className="text-xl font-bold text-emerald-400">{name}</h3>
-              <p className="text-slate-400 text-sm">{address}</p>
+              <h3 className="text-lg sm:text-xl font-bold text-emerald-400 break-words">{name}</h3>
+              <p className="text-slate-400 text-sm break-words">{address}</p>
             </div>
-            
-            <div className="flex items-center space-x-4 ml-8">
-              {tanks.map(renderMiniTank)}
+            {/* Status badge - positioned for mobile */}
+            <div className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
+              status.color === 'red' ? 'bg-red-900/30 text-red-400 border border-red-500/30' :
+              status.color === 'amber' ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30' :
+              'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30'
+            }`}>
+              <span className="hidden sm:inline">{status.label} ({status.count})</span>
+              <span className="sm:hidden">({status.count})</span>
             </div>
           </div>
           
-          <div className={`ml-4 px-3 py-1 rounded-full text-xs font-semibold ${
-            status.color === 'red' ? 'bg-red-900/30 text-red-400 border border-red-500/30' :
-            status.color === 'amber' ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30' :
-            'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30'
-          }`}>
-            {status.label} ({status.count})
+          {/* Tanks section - responsive grid */}
+          <div className="w-full overflow-hidden">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:flex xl:space-x-4 gap-2 sm:gap-3 xl:gap-0 justify-items-center xl:justify-start">
+              {tanks.map(renderMiniTank)}
+            </div>
           </div>
         </div>
 

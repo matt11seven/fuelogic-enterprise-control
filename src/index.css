@@ -149,6 +149,16 @@
     transform: translateY(-2px) scale(1.01);
   }
 
+  /* Mobile-specific hover states */
+  @media (max-width: 640px) {
+    .glass-card-hover:hover {
+      transform: none;
+    }
+    .glass-card-hover:active {
+      transform: scale(0.98);
+    }
+  }
+
   .metric-card {
     @apply glass-card p-6 transition-all duration-300 hover:scale-105;
   }
@@ -163,6 +173,16 @@
 
   .light .metric-card:hover {
     @apply shadow-xl shadow-emerald-200/40;
+  }
+
+  /* Mobile metric cards */
+  @media (max-width: 640px) {
+    .metric-card {
+      @apply p-4;
+    }
+    .metric-card:hover {
+      transform: scale(1.02);
+    }
   }
 
   .fuel-progress {
@@ -182,7 +202,14 @@
   }
 
   .hex-badge {
-    @apply w-8 h-8 flex items-center justify-center text-xs font-bold rounded-md;
+    @apply flex items-center justify-center text-xs font-bold rounded-md;
+  }
+
+  /* Mobile-responsive hex badges */
+  @media (max-width: 640px) {
+    .hex-badge {
+      @apply text-xs;
+    }
   }
 
   /* Melhorias para inputs no tema claro */
@@ -193,6 +220,31 @@
 
   .light .glass-card-input:focus {
     @apply bg-white/80 border-emerald-300/60 ring-2 ring-emerald-500/20;
+  }
+
+  /* Mobile tank grid improvements */
+  .tank-grid-mobile {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+    gap: 0.5rem;
+    justify-items: center;
+    max-width: 100%;
+    overflow-x: visible;
+  }
+
+  @media (min-width: 640px) {
+    .tank-grid-mobile {
+      grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+      gap: 0.75rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .tank-grid-mobile {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-start;
+    }
   }
 }
 
@@ -265,6 +317,51 @@
   .light ::-webkit-scrollbar-thumb:hover {
     @apply bg-emerald-400/80;
   }
+
+  /* Mobile-specific utilities */
+  @media (max-width: 640px) {
+    .mobile-compact {
+      @apply text-sm p-2;
+    }
+    
+    .mobile-stack {
+      @apply flex-col space-y-2 space-x-0;
+    }
+    
+    .mobile-grid {
+      @apply grid-cols-2 gap-2;
+    }
+    
+    .mobile-hide {
+      @apply hidden;
+    }
+    
+    .mobile-show {
+      @apply block;
+    }
+  }
+
+  /* Responsive text sizing */
+  .responsive-text-xl {
+    @apply text-lg sm:text-xl;
+  }
+  
+  .responsive-text-lg {
+    @apply text-base sm:text-lg;
+  }
+  
+  .responsive-text-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  /* Mobile padding utilities */
+  .mobile-p-4 {
+    @apply p-3 sm:p-4;
+  }
+  
+  .mobile-p-6 {
+    @apply p-4 sm:p-6;
+  }
 }
 
 /* Animações e estilos para seção expandida de detalhes */
@@ -276,6 +373,14 @@
   transform: translateY(-10px);
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   overflow: hidden;
+}
+
+/* Mobile responsive tank details */
+@media (max-width: 640px) {
+  .tank-details-expansion {
+    padding: 16px;
+    margin-top: 12px;
+  }
 }
 
 .dark .tank-details-expansion {
@@ -301,6 +406,12 @@
 
 .detail-card:hover {
   transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .detail-card:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .light .detail-card:hover {
@@ -345,4 +456,39 @@
 
 .light .status-info {
   @apply bg-blue-50 text-blue-700 border-blue-200;
+}
+
+/* Station details expansion responsive improvements */
+.station-details-expansion {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 12px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .station-details-expansion {
+    padding: 16px;
+    margin-top: 12px;
+  }
+}
+
+.dark .station-details-expansion {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .station-details-expansion {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.station-details-expansion.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
