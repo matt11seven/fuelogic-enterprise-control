@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, ArrowUpDown } from "lucide-react";
 import FuelTank from "./FuelTank";
 import TankDetails from "./TankDetails";
 import { TankData } from "@/types/api";
@@ -23,6 +24,8 @@ interface StationCardProps {
   selectedTanks: Record<string, { selected: boolean; quantity: number }>;
 }
 
+type SortType = 'number' | 'fuel';
+
 const StationCard = ({ 
   id, 
   name, 
@@ -34,6 +37,7 @@ const StationCard = ({
 }: StationCardProps) => {
   const [expandedTankId, setExpandedTankId] = useState<string | null>(null);
   const [stationExpanded, setStationExpanded] = useState<boolean>(false);
+  const [sortType, setSortType] = useState<SortType>('number');
   
   const expandTankDetails = (tankId: string, event?: React.MouseEvent) => {
     if (event) {
@@ -54,6 +58,30 @@ const StationCard = ({
       setExpandedTankId(null);
     }
   };
+  
+  const toggleSortType = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setSortType(sortType === 'number' ? 'fuel' : 'number');
+  };
+  
+  const getSortedTanks = () => {
+    const tanksToSort = [...tanks];
+    
+    if (sortType === 'number') {
+      // Ordenar por número do tanque (campo Tanque da API)
+      return tanksToSort.sort((a, b) => {
+        const tankNumberA = a.apiData?.Tanque || 0;
+        const tankNumberB = b.apiData?.Tanque || 0;
+        return tankNumberA - tankNumberB;
+      });
+    } else {
+      // Ordenar por quantidade de combustível (maior para menor)
+      return tanksToSort.sort((a, b) => b.current - a.current);
+    }
+  };
+
+  const sortedTanks = getSortedTanks();
+  
   const getStationStatus = () => {
     const criticalTanks = tanks.filter(tank => (tank.current / tank.capacity) < 0.2).length;
     const warningTanks = tanks.filter(tank => {
@@ -97,6 +125,7 @@ const StationCard = ({
     };
 
     const isExpanded = expandedTankId === tank.id;
+    const tankNumber = tank.apiData?.Tanque || 0;
 
     return (
       <div 
@@ -104,7 +133,7 @@ const StationCard = ({
         className="flex flex-col items-center space-y-1 cursor-pointer hover:opacity-90 transition-opacity min-w-[48px] flex-shrink-0"
         onClick={(e) => expandTankDetails(tank.id, e)}
         aria-expanded={isExpanded}
-        title={`Clique para ${isExpanded ? 'fechar' : 'ver'} detalhes do tanque de ${tank.type}`}
+        title={`Tanque ${tankNumber} - ${tank.type} - Clique para ${isExpanded ? 'fechar' : 'ver'} detalhes`}
       >
         <div className={`hex-badge ${getCodeColor()} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative w-7 h-7 sm:w-8 sm:h-8`}>
           <span className="text-xs sm:text-sm">{tank.code}</span>
@@ -138,12 +167,13 @@ const StationCard = ({
           />
         </div>
         <span className="text-xs text-slate-400">{percentage.toFixed(0)}%</span>
+        <span className="text-xs text-slate-500">T{tankNumber}</span>
       </div>
     );
   };
 
   const hasSelectedTanks = tanks.some(tank => selectedTanks[`${id}-${tank.id}`]?.selected);
-  const expandedTank = tanks.find(tank => tank.id === expandedTankId);
+  const expandedTank = sortedTanks.find(tank => tank.id === expandedTankId);
 
   return (
     <div className="glass-card-hover">
@@ -171,10 +201,23 @@ const StationCard = ({
             </div>
           </div>
           
-          {/* Tanks section - responsive grid */}
+          {/* Sort button and tanks section */}
           <div className="w-full overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-slate-400">
+                Tanques ({sortedTanks.length})
+              </span>
+              <button
+                onClick={toggleSortType}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700/50 hover:bg-slate-600/50 rounded-md transition-colors text-slate-300"
+                title={`Ordenar por ${sortType === 'number' ? 'quantidade de combustível' : 'número do tanque'}`}
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                {sortType === 'number' ? 'Nº' : 'Qtd'}
+              </button>
+            </div>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:flex xl:space-x-4 gap-2 sm:gap-3 xl:gap-0 justify-items-center xl:justify-start">
-              {tanks.map(renderMiniTank)}
+              {sortedTanks.map(renderMiniTank)}
             </div>
           </div>
         </div>
@@ -188,27 +231,37 @@ const StationCard = ({
         )}
         
         {/* Seção expandida para todos os tanques da estação */}
-        {stationExpanded && tanks.length > 0 && (
+        {stationExpanded && sortedTanks.length > 0 && (
           <div className="station-details-expansion is-visible mt-6 border-t border-white/10 pt-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-emerald-400">Detalhes dos Tanques</h3>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setStationExpanded(false);
-                }}
-                className="p-1 hover:bg-slate-700/50 rounded-full transition-colors"
-                aria-label="Fechar detalhes"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleSortType}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700/50 hover:bg-slate-600/50 rounded-md transition-colors text-slate-300"
+                  title={`Ordenar por ${sortType === 'number' ? 'quantidade de combustível' : 'número do tanque'}`}
+                >
+                  <ArrowUpDown className="w-3 h-3" />
+                  {sortType === 'number' ? 'Por Número' : 'Por Quantidade'}
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setStationExpanded(false);
+                  }}
+                  className="p-1 hover:bg-slate-700/50 rounded-full transition-colors"
+                  aria-label="Fechar detalhes"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {tanks.map(tank => (
+              {sortedTanks.map(tank => (
                 tank.apiData && (
                   <TankDetails 
                     key={tank.id}
@@ -228,7 +281,7 @@ const StationCard = ({
         {hasSelectedTanks && (
           <div className="animate-fade-in border-t border-white/10 pt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tanks
+              {sortedTanks
                 .filter(tank => selectedTanks[`${id}-${tank.id}`]?.selected)
                 .map(tank => (
                   <FuelTank

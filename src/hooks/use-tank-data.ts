@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { TankData } from '../types/api';
 import { fetchTankData, groupTanksByStation, getProductCode } from '../services/api';
@@ -38,11 +39,14 @@ export function useTankData() {
       return Object.entries(tankGroups).map(([unidadeNome, tanques], index) => {
         const firstTank = tanques[0];
         
+        // Ordenar tanques por número dentro de cada estação
+        const sortedTanks = tanques.sort((a, b) => (a.Tanque || 0) - (b.Tanque || 0));
+        
         return {
           id: `station-${firstTank.IdUnidade || index}`,
           name: firstTank.Cliente ? `${firstTank.Cliente} - ${unidadeNome}` : unidadeNome,
           address: `Unidade ${unidadeNome}`,
-          tanks: tanques.map(tank => ({
+          tanks: sortedTanks.map(tank => ({
             id: `tank-${tank.Id}`,
             code: getProductCode(tank.Produto),
             type: tank.Produto.trim(),
