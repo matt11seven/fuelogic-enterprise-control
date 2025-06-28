@@ -52,93 +52,107 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
   };
 
   return (
-    <div className={`glass-card-hover p-4 ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-900/20' : ''} ${status.animate}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-3">
-          <input 
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => onSelect(e.target.checked)}
-            className="w-4 h-4 text-emerald-600 bg-slate-800 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
-          />
-          <div className={`hex-badge ${getCodeColor()} text-white font-bold`}>
-            {code}
-          </div>
-          <div>
-            <p className="text-white font-semibold">{type}</p>
-            <p className={`text-xs text-${status.color}-400 font-medium`}>{status.label}</p>
-          </div>
-        </div>
-        
-        <div className="text-right">
-          <p className="text-white font-bold">{current.toLocaleString()}L</p>
-          <p className="text-slate-400 text-sm">de {capacity.toLocaleString()}L</p>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <div className="flex items-center mb-1 space-x-2">
-          {/* Ícone representando o tanque */}
-          <div className="w-6 h-8 border border-slate-600 rounded-sm relative overflow-hidden">
-            {/* Nível de combustível */}
-            <div 
-              className={`w-full ${getProgressColor()} absolute bottom-0 left-0 right-0 transition-all duration-500`}
-              style={{ height: `${percentage}%` }}
-            />
-            {/* Ícone de água quando detectada */}
-            {waterAmount > 0 && (
-              <div 
-                className="absolute bottom-0 right-0 mb-[1px] mr-[1px]"
-                
-                title={`Água detectada: ${waterAmount.toLocaleString()}L`}
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="#38bdf8" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  className="w-3 h-3 drop-shadow-md"
-                >
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-                </svg>
-              </div>
-            )}
-          </div>
-          
-          {/* Barra de progresso horizontal */}
-          <div className="fuel-progress flex-1 relative h-2 overflow-hidden">
-            <div className="absolute top-0 left-0 bottom-0 w-full bg-slate-800/50 rounded-full" />
-            <div 
-              className={`absolute top-0 left-0 bottom-0 ${getProgressColor()} rounded-full transition-all duration-500`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-        </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-slate-400">{percentage.toFixed(1)}%</span>
-          <span className="text-slate-400">Disponível: {available.toLocaleString()}L</span>
-        </div>
-      </div>
-
-      {isSelected && (
-        <div className="animate-fade-in">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Quantidade para Pedido (L)
-          </label>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => onQuantityChange(Number(e.target.value))}
-            max={available}
-            min={0}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            placeholder="Digite a quantidade"
-          />
+    <div className="relative">
+      {/* Ícone de água totalmente fora da estrutura para evitar cortes */}
+      {waterAmount > 0 && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: '-10px',
+            right: '-10px',
+            zIndex: 999,
+            backgroundColor: '#3b82f6',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            border: '2px solid #1e40af',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)',
+            animation: 'pulse 2s infinite'
+          }}
+          title={`Água detectada: ${waterAmount.toLocaleString()}L`}
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 24 24" 
+            fill="white"
+            className="w-4 h-4"
+          >
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+          </svg>
         </div>
       )}
+
+      {/* Cartão principal do tanque */}
+      <div className={`glass-card-hover p-4 ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-900/20' : ''} ${status.animate}`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <input 
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelect(e.target.checked)}
+              className="w-4 h-4 text-emerald-600 bg-slate-800 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
+            />
+            <div className={`hex-badge ${getCodeColor()} text-white font-bold`}>
+              {code}
+            </div>
+            <div>
+              <p className="text-white font-semibold">{type}</p>
+              <p className={`text-xs text-${status.color}-400 font-medium`}>{status.label}</p>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <p className="text-white font-bold">{current.toLocaleString()}L</p>
+            <p className="text-slate-400 text-sm">de {capacity.toLocaleString()}L</p>
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <div className="flex items-center mb-1 space-x-2">
+            {/* Ícone representando o tanque */}
+            <div className="w-6 h-8 border border-slate-600 rounded-sm relative">
+              {/* Nível de combustível */}
+              <div 
+                className={`w-full ${getProgressColor()} absolute bottom-0 left-0 right-0 transition-all duration-500 overflow-hidden`}
+                style={{ height: `${percentage}%` }}
+              />
+            </div>
+            
+            {/* Barra de progresso horizontal */}
+            <div className="fuel-progress flex-1 relative h-2 overflow-hidden">
+              <div className="absolute top-0 left-0 bottom-0 w-full bg-slate-800/50 rounded-full" />
+              <div 
+                className={`absolute top-0 left-0 bottom-0 ${getProgressColor()} rounded-full transition-all duration-500`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-400">{percentage.toFixed(1)}%</span>
+            <span className="text-slate-400">Disponível: {available.toLocaleString()}L</span>
+          </div>
+        </div>
+
+        {isSelected && (
+          <div className="animate-fade-in">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Quantidade para Pedido (L)
+            </label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => onQuantityChange(Number(e.target.value))}
+              max={available}
+              min={0}
+              className="w-full px-3 py-2 rounded-md bg-slate-800/80 border border-slate-700 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -37,25 +37,25 @@ export function StatusIndicators({ tanks, compact = false }: StatusIndicatorsPro
     return (
       <div className="flex items-center space-x-2">
         {hasCritical && (
-          <div className="flex items-center bg-red-900/30 text-red-400 px-2 py-1 rounded-full text-xs">
+          <div className="status-indicator flex items-center bg-red-900/30 text-red-400 px-2 py-1 rounded-full text-xs">
             <AlertTriangle className="w-3 h-3 mr-1" />
             <span>{criticalTanks}</span>
           </div>
         )}
         {hasWarning && (
-          <div className="flex items-center bg-amber-900/30 text-amber-400 px-2 py-1 rounded-full text-xs">
+          <div className="status-indicator flex items-center bg-amber-900/40 text-amber-400 px-2 py-1 rounded-full text-xs">
             <AlertTriangle className="w-3 h-3 mr-1" />
             <span>{warningTanks}</span>
           </div>
         )}
         {hasNormal && (
-          <div className="flex items-center bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded-full text-xs">
+          <div className="status-indicator flex items-center bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded-full text-xs">
             <CheckCircle className="w-3 h-3 mr-1" />
             <span>{normalTanks}</span>
           </div>
         )}
         {hasWater && (
-          <div className="flex items-center bg-blue-900/30 text-blue-400 px-2 py-1 rounded-full text-xs">
+          <div className="status-indicator flex items-center bg-blue-900/30 text-blue-400 px-2 py-1 rounded-full text-xs">
             <Droplet className="w-3 h-3 mr-1" />
             <span>{tanksWithWater}</span>
           </div>
@@ -74,28 +74,28 @@ export function StatusIndicators({ tanks, compact = false }: StatusIndicatorsPro
       
       <div className="grid grid-cols-2 gap-2">
         {/* Tanques críticos */}
-        <div className="flex items-center space-x-2">
+        <div className="status-indicator flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${hasCritical ? 'bg-red-500' : 'bg-slate-700'}`} />
           <span className="text-xs text-slate-300">Crítico</span>
           <span className="text-xs text-red-400 ml-auto">{criticalTanks}</span>
         </div>
         
         {/* Tanques em atenção */}
-        <div className="flex items-center space-x-2">
+        <div className="status-indicator flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${hasWarning ? 'bg-amber-500' : 'bg-slate-700'}`} />
           <span className="text-xs text-slate-300">Atenção</span>
           <span className="text-xs text-amber-400 ml-auto">{warningTanks}</span>
         </div>
         
         {/* Tanques normais */}
-        <div className="flex items-center space-x-2">
+        <div className="status-indicator flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${hasNormal ? 'bg-emerald-500' : 'bg-slate-700'}`} />
           <span className="text-xs text-slate-300">Normal</span>
           <span className="text-xs text-emerald-400 ml-auto">{normalTanks}</span>
         </div>
         
         {/* Tanques com água */}
-        <div className="flex items-center space-x-2">
+        <div className="status-indicator flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${hasWater ? 'bg-blue-500' : 'bg-slate-700'}`} />
           <span className="text-xs text-slate-300">Com água</span>
           <span className="text-xs text-blue-400 ml-auto">{tanksWithWater}</span>

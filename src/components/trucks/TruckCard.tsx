@@ -38,7 +38,7 @@ const TruckCard = ({ truck, onEdit, onDelete }: TruckCardProps) => {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="bg-slate-800 px-2 py-1 rounded text-xs font-mono">
+              <div className="bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-1 rounded text-xs font-mono shadow-sm">
                 {truck.license_plate}
               </div>
               <span className="text-sm text-slate-400">

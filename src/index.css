@@ -208,6 +208,7 @@
     opacity: 0.7;
   }
 
+  /* Efeitos hover para metric-card no tema claro */
   .light .metric-card:hover {
     background: linear-gradient(135deg, 
       hsl(0 0% 100%) 0%, 
@@ -217,6 +218,60 @@
       0 8px 32px rgba(16, 185, 129, 0.12),
       0 2px 8px rgba(0, 0, 0, 0.08);
     transform: translateY(-3px) scale(1.02);
+  }
+  
+  /* Efeitos hover para metric-card no tema escuro */
+  .dark .metric-card:hover {
+    background: linear-gradient(135deg, 
+      rgba(30, 41, 59, 0.7) 0%, 
+      rgba(20, 30, 45, 0.8) 50%,
+      rgba(30, 41, 59, 0.7) 100%);
+    box-shadow: 
+      0 8px 32px rgba(16, 185, 129, 0.15),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-3px) scale(1.02);
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  
+  /* Classes de glow para ambos os temas */
+  .glow-red {
+    transition: all 0.3s ease;
+  }
+  .light .glow-red:hover {
+    box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);
+  }
+  .dark .glow-red:hover {
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+  }
+  
+  .glow-amber {
+    transition: all 0.3s ease;
+  }
+  .light .glow-amber:hover {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+  }
+  .dark .glow-amber:hover {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .glow-emerald {
+    transition: all 0.3s ease;
+  }
+  .light .glow-emerald:hover {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+  }
+  .dark .glow-emerald:hover {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  
+  .glow-blue {
+    transition: all 0.3s ease;
+  }
+  .light .glow-blue:hover {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+  .dark .glow-blue:hover {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
 
   /* === SELETORES DE LISTA APRIMORADOS === */
@@ -587,11 +642,17 @@
       hsl(160 70% 50%) 100%);
   }
 
-  /* Status indicators premium */
-  .light .status-indicator {
-    @apply shadow-md;
+  /* Status indicators premium - Estilos base compartilhados */
+  .status-indicator {
     position: relative;
     overflow: hidden;
+    transition: all 0.2s ease;
+    transform: translateZ(0); /* Força aceleração de hardware para animações suaves */
+  }
+  
+  /* Tema claro */
+  .light .status-indicator {
+    @apply shadow-md;
   }
 
   .light .status-indicator::before {
@@ -605,6 +666,21 @@
       rgba(255, 255, 255, 0.4) 0%, 
       rgba(255, 255, 255, 0.1) 100%);
     pointer-events: none;
+  }
+  
+  /* Tema escuro */
+  .dark .status-indicator {
+    @apply shadow-md;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Efeito hover para tema escuro */
+  .dark .status-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.3), 
+                0 3px 6px -2px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
   }
 
   .light .status-critical {
