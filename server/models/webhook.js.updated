@@ -1,0 +1,188 @@
+/**
+ * Modelo para manipulação de webhooks no banco de dados
+ */
+const db = require('../src/db/index');
+
+class Webhook {
+  /**
+   * Busca todos os webhooks de um usuário
+   * @param {number} userId - ID do usuário
+   * @returns {Promise<Array>} Lista de webhooks
+   */
+  static async findAll(userId) {
+    try {
+      const result = await db.query(
+        `SELECT 
+          id, tipo, evento, url, slingflow, contatos_ids,
+          user_id, created_at, updated_at
+        FROM webhooks 
+        WHERE user_id = $1 
+        AND deleted_at IS NULL
+        ORDER BY evento ASC, created_at DESC`,
+        [userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar webhooks:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca um webhook pelo ID
+   * @param {number} id - ID do webhook
+   * @param {number} userId - ID do usuário
+   * @returns {Promise<Object|null>} Webhook encontrado ou null
+   */
+  static async findById(id, userId) {
+    try {
+      const result = await db.query(
+        `SELECT 
+          id, tipo, evento, url, slingflow, contatos_ids,
+          user_id, created_at, updated_at
+        FROM webhooks 
+        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
+        [id, userId]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar webhook por ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca webhooks por tipo de evento
+   * @param {string} evento - Tipo de evento (inspecao, pedido, sophia)
+   * @param {number} userId - ID do usuário
+   * @returns {Promise<Array>} Lista de webhooks
+   */
+  static async findByEvento(evento, userId) {
+    try {
+      const result = await db.query(
+        `SELECT 
+          id, tipo, evento, url, slingflow, contatos_ids,
+          user_id, created_at, updated_at
+        FROM webhooks 
+        WHERE evento = $1 AND user_id = $2 AND deleted_at IS NULL
+        ORDER BY created_at DESC`,
+        [evento, userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar webhooks por evento:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cria um novo webhook
+   * @param {Object} webhookData - Dados do webhook
+   * @param {number} userId - ID do usuário
+   * @returns {Promise<Object>} Webhook criado
+   */
+  static async create(webhookData, userId) {
+    try {
+      const { tipo, evento, url, slingflow, contatos_ids } = webhookData;
+      
+      const result = await db.query(
+        `INSERT INTO webhooks (
+          tipo, evento, url, slingflow, contatos_ids, user_id, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        RETURNING 
+          id, tipo, evento, url, slingflow, contatos_ids,
+          user_id, created_at, updated_at`,
+        [tipo, evento, url, slingflow, contatos_ids, userId]
+      );
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Erro ao criar webhook:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Atualiza um webhook existente
+   * @param {number} id - ID do webhook
+   * @param {Object} webhookData - Dados do webhook
+   * @param {number} userId - ID do usuário
+   * @returns {Promise<Object>} Webhook atualizado
+   */
+  static async update(id, webhookData, userId) {
+    try {
+      const { tipo, evento, url, slingflow, contatos_ids } = webhookData;
+      
+      const result = await db.query(
+        `UPDATE webhooks 
+        SET 
+          tipo = $1,
+          evento = $2,
+          url = $3,
+          slingflow = $4,
+          contatos_ids = $5,
+          updated_at = NOW()
+        WHERE id = $6 AND user_id = $7 AND deleted_at IS NULL
+        RETURNING 
+          id, tipo, evento, url, slingflow, contatos_ids,
+          user_id, created_at, updated_at`,
+        [tipo, evento, url, slingflow, contatos_ids, id, userId]
+      );
+      
+      if (result.rows.length === 0) {
+        throw new Error('Webhook não encontrado ou sem permissão para editar');
+      }
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Erro ao atualizar webhook:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Realiza soft delete em um webhook (marca como deletado)
+   * @param {number} id - ID do webhook
+   * @param {number} userId - ID do usuário
+   * @returns {Promise<boolean>} Sucesso da operação
+   */
+  static async delete(id, userId) {
+    try {
+      const result = await db.query(
+        `UPDATE webhooks 
+        SET deleted_at = NOW() 
+        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
+        [id, userId]
+      );
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Erro ao deletar webhook:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca webhooks ativos por tipo de evento
+   * @param {string} evento - Tipo de evento (inspecao, pedido)
+   * @returns {Promise<Array>} Lista de webhooks ativos
+   */
+  static async findActiveByEvent(evento) {
+    try {
+      const result = await db.query(
+        `SELECT 
+          id, tipo, evento, url, slingflow, contatos_ids, user_id
+        FROM webhooks 
+        WHERE evento = $1 
+        AND deleted_at IS NULL`,
+        [evento]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar webhooks ativos por evento:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = Webhook;

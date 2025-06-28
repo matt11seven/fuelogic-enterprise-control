@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import PeopleManager from "@/components/people/PeopleManager";
+import WebhookManager from "@/components/webhooks/WebhookManager";
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("order-rules");
@@ -176,43 +177,21 @@ const SettingsPage = () => {
             </TabsContent>
             
             {/* Conteúdo da aba Webhooks */}
-            <TabsContent value="webhooks">
-              <h2 className="text-xl font-semibold mb-4">Webhooks</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Alerta de Inspeção</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-400">
-                      Configure webhooks para notificações de inspeção de tanques.
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Realização de Pedido</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-400">
-                      Configure webhooks para notificações de novos pedidos.
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">IA Sophia</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-400">
-                      Configure webhooks para integração com a IA Sophia.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+            <TabsContent value="webhooks" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Webhook className="w-5 h-5 mr-2 text-blue-500" />
+                    Webhooks e Notificações
+                  </CardTitle>
+                  <CardDescription>
+                    Configure integrações para notificações de alertas de inspeção e realização de pedidos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <WebhookManager />
+                </CardContent>
+              </Card>
             </TabsContent>
             
             {/* Conteúdo da aba Integrações APIs */}

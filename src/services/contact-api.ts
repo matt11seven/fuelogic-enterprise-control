@@ -67,8 +67,9 @@ export interface Contact {
   tipo: 'distribuidora' | 'fornecedor' | 'gerente' | 'supervisor' | 'proprietario' | 'manutencao';
   observacoes?: string;
   status: 'ativo' | 'inativo';
-  criado_em?: string;
-  atualizado_em?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
 }
 
 /**
