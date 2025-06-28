@@ -22,9 +22,9 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { Truck, TruckStatus, TruckFilters } from '../types/truck';
 import TruckCard from './TruckCard';
-import TruckSearch from './TruckSearch';
-import TruckRegistrationForm from './TruckRegistrationForm';
-import { getAllTrucks, deleteTruck, searchTrucks } from '../services/truck-api';
+import TruckSearch from './trucks/TruckSearch';
+import TruckRegistrationForm from './trucks/TruckRegistrationForm';
+import { getAllTrucks, deleteTruck, searchTrucks, createTruck } from '../services/truck-api';
 
 const TruckManager: React.FC = () => {
   const [trucks, setTrucks] = useState<Truck[]>([]);
@@ -132,17 +132,17 @@ const TruckManager: React.FC = () => {
   return (
     <Box>
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center" justifyContent="space-between">
-          <Grid item xs={12} sm={6}>
+        <Box sx={{ display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, gap: 2, alignItems: {xs: 'flex-start', sm: 'center'}, justifyContent: 'space-between' }}>
+          <Box sx={{ width: {xs: '100%', sm: '50%'} }}>
             <Typography variant="h5" component="h2" gutterBottom>
               Gerenciamento de Caminhões
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Cadastre e gerencie sua frota de caminhões
             </Typography>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' }, gap: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' }, gap: 1, width: {xs: '100%', sm: '50%'} }}>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -150,7 +150,6 @@ const TruckManager: React.FC = () => {
             >
               Novo Caminhão
             </Button>
-            
             <Button
               variant="outlined"
               startIcon={<RefreshIcon />}
@@ -158,17 +157,17 @@ const TruckManager: React.FC = () => {
             >
               Atualizar
             </Button>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Paper>
       
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={8}>
+        <Box sx={{ display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, gap: 2, alignItems: 'center' }}>
+          <Box sx={{ width: {xs: '100%', sm: '66%', md: '75%'} }}>
             <TruckSearch onSearch={handleSearch} />
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={4}>
+          <Box sx={{ width: {xs: '100%', sm: '33%', md: '25%'} }}>
             <FormControl fullWidth size="small">
               <InputLabel id="status-filter-label">Status</InputLabel>
               <Select
@@ -176,6 +175,7 @@ const TruckManager: React.FC = () => {
                 value={filters.status}
                 label="Status"
                 onChange={handleStatusFilterChange}
+                size="small"
               >
                 <MenuItem value="all">Todos</MenuItem>
                 <MenuItem value="active">Ativos</MenuItem>
@@ -183,8 +183,8 @@ const TruckManager: React.FC = () => {
                 <MenuItem value="maintenance">Em Manutenção</MenuItem>
               </Select>
             </FormControl>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Paper>
       
       {error && (
@@ -234,11 +234,23 @@ const TruckManager: React.FC = () => {
       >
         <DialogTitle>Adicionar Novo Caminhão</DialogTitle>
         <DialogContent>
-          <TruckRegistrationForm onSubmitSuccess={handleAddTruck} />
+          <TruckRegistrationForm 
+            onSubmit={async (data) => {
+              try {
+                const newTruck = await createTruck(data);
+                handleAddTruck(newTruck);
+                setOpenDialog(false);
+              } catch (err) {
+                console.error('Erro ao criar caminhão:', err);
+                setError('Não foi possível criar o caminhão. Tente novamente mais tarde.');
+              }
+            }}
+            onCancel={() => setOpenDialog(false)}
+            isSubmitting={loading}
+            error={error}
+          />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-        </DialogActions>
+        {/* Botão de cancelar foi movido para dentro do formulário */}
       </Dialog>
     </Box>
   );

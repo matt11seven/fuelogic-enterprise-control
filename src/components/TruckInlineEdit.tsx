@@ -10,13 +10,14 @@ import {
   Button,
   Stack,
   Typography,
-  Alert
+  Alert,
+  SelectChangeEvent
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { Truck, TruckStatus } from '../types/truck';
 import { updateTruck } from '../services/truck-api';
-import { isValidBrazilianLicensePlate } from '../utils/utils';
+import { isValidBrazilianLicensePlate } from '../lib/utils';
 
 interface TruckInlineEditProps {
   truck: Truck;
@@ -63,7 +64,8 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  // Handler para TextField
+  const handleTextFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name) {
       setFormData(prev => ({
@@ -72,6 +74,24 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
       }));
       
       // Limpar erro do campo quando o usuário digita
+      if (errors[name]) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: ''
+        }));
+      }
+    }
+  };
+
+  // Handler para Select
+  const handleSelectChange = (e: SelectChangeEvent) => {
+    const { name, value } = e.target;
+    if (name) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      
       if (errors[name]) {
         setErrors(prev => ({
           ...prev,
@@ -123,7 +143,7 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
           name="name"
           label="Nome do Caminhão"
           value={formData.name}
-          onChange={handleChange}
+          onChange={handleTextFieldChange}
           fullWidth
           size="small"
           error={!!errors.name}
@@ -135,7 +155,7 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
           name="driver_name"
           label="Nome do Motorista"
           value={formData.driver_name}
-          onChange={handleChange}
+          onChange={handleTextFieldChange}
           fullWidth
           size="small"
           error={!!errors.driver_name}
@@ -147,7 +167,7 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
           name="license_plate"
           label="Placa"
           value={formData.license_plate}
-          onChange={handleChange}
+          onChange={handleTextFieldChange}
           fullWidth
           size="small"
           error={!!errors.license_plate}
@@ -160,7 +180,7 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
           label="Capacidade (litros)"
           type="number"
           value={formData.capacity}
-          onChange={handleChange}
+          onChange={handleTextFieldChange}
           fullWidth
           size="small"
           error={!!errors.capacity}
@@ -175,7 +195,7 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
             name="status"
             value={formData.status}
             label="Status"
-            onChange={handleChange}
+            onChange={handleSelectChange}
             disabled={isSubmitting}
           >
             <MenuItem value="active">Ativo</MenuItem>
@@ -188,7 +208,7 @@ const TruckInlineEdit: React.FC<TruckInlineEditProps> = ({ truck, onSave, onCanc
           name="observations"
           label="Observações"
           value={formData.observations}
-          onChange={handleChange}
+          onChange={handleTextFieldChange}
           fullWidth
           size="small"
           multiline

@@ -21,8 +21,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import HistoryIcon from '@mui/icons-material/History';
 import { Truck } from '../types/truck';
-import TruckStatusBadge from './TruckStatusBadge';
-import { formatDate } from '../utils/utils';
+import TruckStatusBadge from './trucks/TruckStatusBadge';
+import { formatDate } from '../lib/utils';
 import TruckInlineEdit from './TruckInlineEdit';
 import TruckHistory from './TruckHistory';
 

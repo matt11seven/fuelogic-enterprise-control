@@ -14,7 +14,7 @@ import {
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { formatDate } from '../utils/utils';
+import { formatDate } from '../lib/utils';
 import axios from 'axios';
 
 interface TruckHistoryItem {
