@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,20 +25,20 @@ const TruckSearch = ({
   };
 
   return (
-    <form onSubmit={handleSearch} className="relative flex w-full max-w-md items-center">
+    <form onSubmit={handleSearch} className="relative flex w-full max-w-sm items-center">
       <Input
         type="text"
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="filter-field pr-20 pl-4 py-3 text-sm font-medium placeholder:font-normal"
+        className="pr-16"
       />
       {query && (
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="absolute right-10 h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200"
+          className="absolute right-8 h-full"
           onClick={clearSearch}
         >
           <X className="h-4 w-4" />
@@ -50,7 +49,7 @@ const TruckSearch = ({
         type="submit"
         variant="ghost"
         size="icon"
-        className="absolute right-1 h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200"
+        className="absolute right-0 h-full"
       >
         <Search className="h-4 w-4" />
         <span className="sr-only">Buscar</span>
@@ -60,4 +59,3 @@ const TruckSearch = ({
 };
 
 export default TruckSearch;
-
