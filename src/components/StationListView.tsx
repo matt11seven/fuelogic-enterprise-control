@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { ChevronDown, Filter, MapPin, Search, X, ChevronsDown, ChevronsUp } from "lucide-react";
 import { TankData } from "@/types/api";
@@ -188,13 +189,13 @@ export function StationListView({
             placeholder="Buscar posto ou endereço..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="filter-field w-full pl-10 pr-10 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
           />
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-500 dark:text-slate-400" />
           {searchTerm && (
             <button 
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+              className="absolute right-3 top-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -208,7 +209,7 @@ export function StationListView({
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters({...filters, status: e.target.value})}
-                  className="pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white appearance-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="select-enhanced pl-10 pr-3 py-2 rounded-lg appearance-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
                 >
                   <option value="all">Todos os status</option>
                   <option value="critical">Crítico</option>
@@ -216,7 +217,7 @@ export function StationListView({
                   <option value="normal">Normal</option>
                   <option value="water">Com água</option>
                 </select>
-                <Filter className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                <Filter className="absolute left-3 top-2.5 h-5 w-5 text-slate-500 dark:text-slate-400" />
               </div>
             </TooltipTrigger>
             <TooltipContent>
@@ -232,14 +233,14 @@ export function StationListView({
                 <select
                   value={filters.level}
                   onChange={(e) => setFilters({...filters, level: e.target.value})}
-                  className="pl-10 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white appearance-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="select-enhanced pl-10 pr-3 py-2 rounded-lg appearance-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
                 >
                   <option value="all">Todos os níveis</option>
                   <option value="low">Baixo (&lt;30%)</option>
                   <option value="medium">Médio (30-70%)</option>
                   <option value="high">Alto (&gt;70%)</option>
                 </select>
-                <Filter className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                <Filter className="absolute left-3 top-2.5 h-5 w-5 text-slate-500 dark:text-slate-400" />
               </div>
             </TooltipTrigger>
             <TooltipContent>
@@ -255,7 +256,7 @@ export function StationListView({
                 variant="outline" 
                 size="icon"
                 onClick={toggleAllStations}
-                className="bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 h-[42px] w-[42px]"
+                className="h-[42px] w-[42px] transition-all duration-200"
               >
                 {allExpanded ? 
                   <ChevronsUp className="h-5 w-5" /> : 
@@ -277,7 +278,7 @@ export function StationListView({
               setFilters({status: 'all', level: 'all', station: ''});
               setSearchTerm('');
             }}
-            className="bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+            className="transition-all duration-200"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -286,8 +287,10 @@ export function StationListView({
       
       <div className="space-y-2">
         {filteredStations.length === 0 ? (
-          <div className="glass-card-hover p-6 text-center text-slate-400">
-            Nenhum posto encontrado com os filtros selecionados.
+          <div className="glass-card-hover p-6 text-center">
+            <p className="text-slate-600 dark:text-slate-400">
+              Nenhum posto encontrado com os filtros selecionados.
+            </p>
           </div>
         ) : (
           filteredStations.map(station => {
@@ -302,31 +305,35 @@ export function StationListView({
               >
                 {/* Cabeçalho da estação */}
                 <div 
-                  className={`flex items-center justify-between cursor-pointer p-4 hover:bg-slate-800/50 transition-all rounded-t-lg ${expandedStations[station.id] ? 'bg-slate-800/30' : ''}`}
+                  className={`flex items-center justify-between cursor-pointer p-4 transition-all rounded-t-lg ${
+                    expandedStations[station.id] 
+                      ? 'bg-slate-50/80 dark:bg-slate-800/30 border-b border-slate-200/50 dark:border-slate-700/50' 
+                      : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/50'
+                  }`}
                   onClick={() => toggleStationExpansion(station.id)}
                   aria-expanded={expandedStations[station.id]}
                 >
                   <div className="flex items-center space-x-2">
                     <div className={`transform transition-transform duration-200 ease-in-out ${expandedStations[station.id] ? 'rotate-0' : '-rotate-90'}`}>
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     </div>
-                    <MapPin className="w-5 h-5 text-emerald-400" />
+                    <MapPin className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
                     <div>
-                      <h3 className="text-lg font-medium text-white">{station.name}</h3>
-                      <p className="text-sm text-slate-400">{station.address}</p>
+                      <h3 className="text-lg font-medium text-slate-800 dark:text-white">{station.name}</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{station.address}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-3">
                     <StatusIndicators tanks={station.tanks} compact={true} />
-                    <span className="text-sm text-slate-400">{station.tanks.length} tanques</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{station.tanks.length} tanques</span>
                   </div>
                 </div>
                 
                 {/* Conteúdo expandido com animação */}
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedStations[station.id] ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                  <div className="border-t border-slate-700/50">
-                    <div className="p-4 space-y-2">
+                  <div className="border-t border-slate-200/50 dark:border-slate-700/50">
+                    <div className="p-4 space-y-2 bg-slate-25/40 dark:bg-slate-900/20">
                       {station.tanks.map(tank => {
                         const tankStatus = getTankStatus(tank);
                         const tankId = `${station.id}-${tank.id}`;
@@ -338,7 +345,11 @@ export function StationListView({
                         return (
                           <div 
                             key={tank.id} 
-                            className={`p-3 rounded-lg ${isSelected ? 'bg-emerald-900/20 border border-emerald-500/30' : 'bg-slate-800/30 border border-slate-700/30'}`}
+                            className={`p-3 rounded-lg transition-all duration-200 ${
+                              isSelected 
+                                ? 'bg-emerald-50/80 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-500/30 shadow-sm' 
+                                : 'bg-white/60 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-700/30 hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
+                            }`}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-2">
@@ -348,16 +359,16 @@ export function StationListView({
                                       type="checkbox"
                                       checked={isSelected}
                                       onChange={(e) => onTankSelect(station.id, tank.id, e.target.checked)}
-                                      className="w-5 h-5 rounded border-slate-500 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
+                                      className="w-5 h-5 rounded border-slate-400 dark:border-slate-500 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-white dark:focus:ring-offset-slate-800 transition-colors"
                                     />
                                   </div>
-                                  <Badge className={`${getCodeColor(tank.code)} text-white`}>{tank.code}</Badge>
-                                  <span className="text-white font-medium">Tanque {tankNumber}</span>
-                                  <span className="text-sm text-slate-400">{tank.type}</span>
+                                  <Badge className={`${getCodeColor(tank.code)} text-white shadow-sm`}>{tank.code}</Badge>
+                                  <span className="text-slate-800 dark:text-white font-medium">Tanque {tankNumber}</span>
+                                  <span className="text-sm text-slate-600 dark:text-slate-400">{tank.type}</span>
                                 </div>
                                 
                                 <div className="flex items-center">
-                                  <span className="text-sm text-slate-300">
+                                  <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                                     {tank.current.toLocaleString()} / {tank.capacity.toLocaleString()} L
                                   </span>
                                 </div>
@@ -368,10 +379,10 @@ export function StationListView({
                                   {/* Indicador de água */}
                                   {hasWater && (
                                     <div 
-                                      className="flex items-center space-x-1 text-blue-400 bg-blue-900/20 px-2 py-1 rounded"
+                                      className="flex items-center space-x-1 text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/20 px-2 py-1 rounded border border-blue-200/50 dark:border-blue-800/50"
                                       title={`${formatWaterAmount(tank.apiData?.QuantidadeDeAgua || 0)} L de água`}
                                     >
-                                      <span className="text-xs">
+                                      <span className="text-xs font-medium">
                                         {formatWaterAmount(tank.apiData?.QuantidadeDeAgua || 0)} L
                                       </span>
                                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -404,18 +415,17 @@ export function StationListView({
                             </div>
                             
                             {/* Barra de progresso */}
-                            <div className="mt-3 relative h-2 overflow-hidden rounded-full">
-                              <div className="absolute top-0 left-0 bottom-0 w-full bg-slate-800/50" />
+                            <div className="mt-3 relative h-2 overflow-hidden rounded-full bg-slate-200/60 dark:bg-slate-800/50">
                               <div 
                                 className={`absolute top-0 left-0 bottom-0 ${
                                   tankStatus.color === 'red' ? 
-                                  'bg-gradient-to-r from-red-600 to-red-400' : 
+                                  'bg-gradient-to-r from-red-500 to-red-400' : 
                                   tankStatus.color === 'amber' ? 
-                                  'bg-gradient-to-r from-amber-600 to-amber-400' : 
+                                  'bg-gradient-to-r from-amber-500 to-amber-400' : 
                                   tankStatus.color === 'blue' ? 
-                                  'bg-gradient-to-r from-blue-600 to-blue-400' : 
-                                  'bg-gradient-to-r from-emerald-600 to-emerald-400'
-                                } rounded-full transition-all duration-500`}
+                                  'bg-gradient-to-r from-blue-500 to-blue-400' : 
+                                  'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                                } rounded-full transition-all duration-500 shadow-sm`}
                                 style={{ width: `${tankStatus.percentage}%` }}
                               />
                             </div>
@@ -423,7 +433,7 @@ export function StationListView({
                             {/* Campo de quantidade para pedido (quando selecionado) */}
                             {isSelected && (
                               <div className="mt-3 animate-fade-in">
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                   Quantidade para Pedido (L)
                                 </label>
                                 <input
@@ -432,7 +442,7 @@ export function StationListView({
                                   onChange={(e) => onQuantityChange(station.id, tank.id, Number(e.target.value))}
                                   max={tank.capacity - tank.current}
                                   min={0}
-                                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                  className="form-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
                                   placeholder="Digite a quantidade"
                                 />
                               </div>
