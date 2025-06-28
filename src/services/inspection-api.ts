@@ -1,5 +1,12 @@
 import axios from 'axios';
-import { API_BASE_URL } from '@/config';
+
+// Definindo a URL base da API de acordo com o ambiente
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+// Removendo /api do BASE_URL se já estiver presente para evitar duplicação
+const API_BASE_URL = BASE_URL.endsWith('/api') 
+  ? `${BASE_URL}/inspection-alerts`
+  : `${BASE_URL}/api/inspection-alerts`;
 
 // Interfaces para dados do tanque
 export interface TankInspectionData {
