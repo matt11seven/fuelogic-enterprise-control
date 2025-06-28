@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MapPin, ArrowUpDown } from "lucide-react";
 import FuelTank from "./FuelTank";
 import TankDetails from "./TankDetails";
+import StatusIndicators from "./StatusIndicators";
 import { TankData } from "@/types/api";
 
 interface Tank {
@@ -190,14 +191,9 @@ const StationCard = ({
               <h3 className="text-lg sm:text-xl font-bold text-emerald-400 break-words">{name}</h3>
               <p className="text-slate-400 text-sm break-words">{address}</p>
             </div>
-            {/* Status badge - positioned for mobile */}
-            <div className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
-              status.color === 'red' ? 'bg-red-900/30 text-red-400 border border-red-500/30' :
-              status.color === 'amber' ? 'bg-amber-900/30 text-amber-400 border border-amber-500/30' :
-              'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30'
-            }`}>
-              <span className="hidden sm:inline">{status.label} ({status.count})</span>
-              <span className="sm:hidden">({status.count})</span>
+            {/* Status indicators - positioned for mobile */}
+            <div className="flex-shrink-0">
+              <StatusIndicators tanks={tanks} compact={true} />
             </div>
           </div>
           

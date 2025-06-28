@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const truckRoutes = require('./routes/trucks');
 const db = require('./db');
 
 // Inicialização do app
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // Rotas
 app.use('/api/auth', authRoutes);
+app.use('/api/trucks', truckRoutes);
 
 // Rota de status para verificar se o servidor está online
 app.get('/api/status', (req, res) => {
