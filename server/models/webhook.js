@@ -139,6 +139,11 @@ class Webhook {
         // como a estrutura mudou para usar selected_contacts como JSONB
       }
       
+
+      // Se for Sophia AI, precisa ter URL
+      if (webhookData.integration === 'sophia_ai' && !webhookData.url) {
+        throw new Error('URL é obrigatória para webhooks da IA Sophia');
+      }
       const result = await db.query(
         `INSERT INTO webhooks 
           (type, name, url, integration, selected_contacts, user_id, created_at, updated_at)
@@ -175,6 +180,11 @@ class Webhook {
       // Validação para integração SlingFlow
       if (webhookData.integration === 'slingflow' && (!webhookData.selected_contacts || Object.keys(webhookData.selected_contacts).length === 0)) {
         throw new Error('É necessário selecionar pelo menos um contato interno para o SlingFlow');
+      }
+
+      // Se for Sophia AI, precisa ter URL
+      if (webhookData.integration === 'sophia_ai' && !webhookData.url) {
+        throw new Error('URL é obrigatória para webhooks da IA Sophia');
       }
 
       // Se for SlingFlow, garantir que todos os contatos são internos

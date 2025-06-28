@@ -61,7 +61,7 @@ export interface Webhook {
   type: string;
   name: string;
   url?: string;
-  integration: 'slingflow' | 'generic';
+  integration: 'slingflow' | 'generic' | 'sophia_ai';
   selected_contacts?: any; // JSONB field
   is_active?: boolean;
   method?: string;

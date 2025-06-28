@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, ExternalLink, Trash2, Pencil } from "lucide-react";
+import { Plus, Loader2, ExternalLink, Trash2, Pencil, Bot, Brain, AlertTriangle, ShoppingCart } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import webhookApi, { Webhook } from "@/services/webhook-api";
 import WebhookForm from "./WebhookForm";
@@ -12,7 +12,7 @@ const WebhookManager = () => {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<'inspection_alert' | 'order_placed'>('inspection_alert');
+  const [activeTab, setActiveTab] = useState<'inspection_alert' | 'order_placed' | 'sophia_ai_order'>('inspection_alert');
   const { toast } = useToast();
 
   // Carregar webhooks
@@ -104,7 +104,7 @@ const WebhookManager = () => {
   // Renderização das tabs
   // Função auxiliar para renderizar a lista de webhooks
   const renderWebhookList = (
-    eventType: 'inspection_alert' | 'order_placed',
+    eventType: 'inspection_alert' | 'order_placed' | 'sophia_ai_order',
     webhooks: Webhook[],
     isLoading: boolean,
     onEdit: (webhook: Webhook) => void,
@@ -123,7 +123,11 @@ const WebhookManager = () => {
       return (
         <div className="text-center p-8 border rounded-lg">
           <p className="text-slate-500 dark:text-slate-400">
-            Nenhum webhook configurado para {eventType === 'inspection_alert' ? 'alerta de inspeção' : 'realização de pedido'}.
+            Nenhum webhook configurado para {
+              eventType === 'inspection_alert' ? 'alerta de inspeção' : 
+              eventType === 'order_placed' ? 'realização de pedido' : 
+              'IA Sophia'
+            }.
           </p>
           <p className="text-sm mt-2 text-slate-400 dark:text-slate-500">
             Clique em "Novo Webhook" para adicionar uma configuração.
@@ -139,8 +143,11 @@ const WebhookManager = () => {
             <div className="flex-grow">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant={webhook.integration === 'slingflow' ? "default" : "outline"} 
-                       className={webhook.integration === 'slingflow' ? "bg-sling" : ""}>
-                  {webhook.integration === 'slingflow' ? "SlingFlow" : "Webhook Genérico"}
+                       className={webhook.integration === 'slingflow' ? "bg-sling" : 
+                                 webhook.integration === 'sophia_ai' ? "bg-green-500 hover:bg-green-600" : ""}>
+                  {webhook.integration === 'slingflow' ? "SlingFlow" : 
+                   webhook.integration === 'sophia_ai' ? "IA Sophia" : 
+                   "Webhook Genérico"}
                 </Badge>
                 <span className="text-sm text-slate-500 dark:text-slate-400">
                   Criado em {new Date(webhook.created_at || Date.now()).toLocaleDateString()}
@@ -151,6 +158,8 @@ const WebhookManager = () => {
                 <div className="text-sm text-gray-500 flex items-center gap-1">
                   {webhook.integration === 'slingflow' ? (
                     <>SlingFlow ({Object.keys(webhook.selected_contacts || {}).length} contatos)</>
+                  ) : webhook.integration === 'sophia_ai' ? (
+                    <>IA Sophia: Integração para cotação de pedidos</>
                   ) : (
                     <>
                       Webhook Genérico: <span className="truncate max-w-[180px]">{webhook.url}</span>
@@ -198,18 +207,28 @@ const WebhookManager = () => {
         </Button>
       </div>
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-        Configure webhooks para receber notificações de alertas de inspeção e realização de pedidos.
-        Você pode optar por usar SlingFlow (para notificação de contatos internos) ou um webhook genérico para integração com outros sistemas.
+        Configure webhooks para receber notificações de alertas de inspeção, realização de pedidos e integração com a IA Sophia.
+        Você pode optar por usar SlingFlow (para notificação de contatos internos), IA Sophia (para cotações) ou um webhook genérico para integração com outros sistemas.
       </p>
 
       <Tabs
         value={activeTab}
-        onValueChange={(value: 'inspection_alert' | 'order_placed') => setActiveTab(value)}
+        onValueChange={(value: 'inspection_alert' | 'order_placed' | 'sophia_ai_order') => setActiveTab(value)}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="inspection_alert">Alertas de Inspeção</TabsTrigger>
-          <TabsTrigger value="order_placed">Realização de Pedidos</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="inspection_alert" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Alertas de Inspeção
+          </TabsTrigger>
+          <TabsTrigger value="order_placed" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Realização de Pedidos
+          </TabsTrigger>
+          <TabsTrigger value="sophia_ai_order" className="flex items-center gap-2">
+            <Brain className="h-4 w-4 text-emerald-500" />
+            IA Sophia
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="inspection_alert" className="mt-4">
@@ -226,6 +245,16 @@ const WebhookManager = () => {
           {renderWebhookList(
             'order_placed',
             webhooks.filter(w => w.type === 'order_placed'),
+            isLoading,
+            handleEditWebhook,
+            handleDeleteWebhook
+          )}
+        </TabsContent>
+
+        <TabsContent value="sophia_ai_order" className="mt-4">
+          {renderWebhookList(
+            'sophia_ai_order',
+            webhooks.filter(w => w.type === 'sophia_ai_order' || w.type === 'sophia'),
             isLoading,
             handleEditWebhook,
             handleDeleteWebhook

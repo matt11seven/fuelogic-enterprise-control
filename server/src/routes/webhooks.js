@@ -90,11 +90,11 @@ router.post('/', authenticateToken, async (req, res) => {
     }
     
     // Validações específicas
-    if (integration !== 'generic' && integration !== 'slingflow') {
+    if (integration !== 'generic' && integration !== 'slingflow' && integration !== 'sophia_ai') {
       return res.status(400).json({ message: 'Tipo de integração inválido' });
     }
     
-    if (type !== 'inspection_alert' && type !== 'order_placed' && type !== 'sophia') {
+    if (type !== 'inspection_alert' && type !== 'order_placed' && type !== 'sophia' && type !== 'sophia_ai_order') {
       return res.status(400).json({ message: 'Tipo de evento inválido' });
     }
     
@@ -106,6 +106,10 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'É necessário selecionar pelo menos um contato para SlingFlow' });
     }
     
+
+    if (integration === 'sophia_ai' && !url) {
+      return res.status(400).json({ message: 'URL é obrigatória para webhooks da IA Sophia' });
+    }
     const webhookData = {
       type,
       name,
@@ -233,7 +237,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
     }
     
     // Verificar o tipo de integração
-    if (webhook.integration === 'generic') {
+    if (webhook.integration === 'generic' || webhook.integration === 'sophia_ai') {
       // Para integração genérica, faz uma requisição HTTP para a URL
       const axios = require('axios');
       

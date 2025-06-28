@@ -42,7 +42,7 @@ const WebhookForm = ({
   const [type, setType] = useState<string>(initialData?.type || 'inspection_alert');
   const [name, setName] = useState<string>(initialData?.name || '');
   const [url, setUrl] = useState(initialData?.url || '');
-  const [integration, setIntegration] = useState<'generic' | 'slingflow'>(initialData?.integration || 'generic');
+  const [integration, setIntegration] = useState<'generic' | 'slingflow' | 'sophia_ai'>(initialData?.integration || 'generic');
   const [selectedContacts, setSelectedContacts] = useState<any>(initialData?.selected_contacts || {});
   const [contacts, setContacts] = useState<InternalContact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -181,10 +181,12 @@ const WebhookForm = ({
     if (contactsError) setContactsError('');
   };
 
-  const handleIntegrationChange = (value: 'generic' | 'slingflow') => {
+  const handleIntegrationChange = (value: 'generic' | 'slingflow' | 'sophia_ai') => {
     setIntegration(value);
     // Limpar erros relacionados ao tipo anterior
     if (value === 'generic') {
+      setContactsError('');
+    } else if (value === 'sophia_ai') {
       setContactsError('');
     } else {
       setUrlError('');
@@ -219,7 +221,7 @@ const WebhookForm = ({
               <SelectContent>
                 <SelectItem value="inspection_alert">Alerta de Inspeção</SelectItem>
                 <SelectItem value="order_placed">Realização de Pedido</SelectItem>
-                <SelectItem value="sophia">IA Sophia</SelectItem>
+                <SelectItem value="sophia_ai_order">Pedidos IA Sophia</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -239,7 +241,7 @@ const WebhookForm = ({
             <Label>Integração</Label>
             <RadioGroup 
               value={integration} 
-              onValueChange={(value: 'generic' | 'slingflow') => handleIntegrationChange(value)}
+              onValueChange={(value: 'generic' | 'slingflow' | 'sophia_ai') => handleIntegrationChange(value)}
               className="flex flex-col space-y-1"
               disabled={isLoading}
             >
@@ -253,6 +255,12 @@ const WebhookForm = ({
                 <RadioGroupItem value="generic" id="generic" />
                 <Label htmlFor="generic" className="font-normal">
                   Webhook Genérico (para integração com sistemas externos)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="sophia_ai" id="sophia_ai" />
+                <Label htmlFor="sophia_ai" className="font-normal">
+                  IA Sophia (integração para cotação de pedidos)
                 </Label>
               </div>
             </RadioGroup>
