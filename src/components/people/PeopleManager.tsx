@@ -179,11 +179,29 @@ const PeopleManager = () => {
   // Função para formatar o telefone para exibição
   const formatPhone = (phone: string) => {
     const clean = phone.replace(/\D/g, '');
-    if (clean.length === 11) { // Celular com DDD
-      return clean.replace(/(\d{2})(\d{5})(\d{4})/, '+55 $1 $2-$3');
-    } else if (clean.length === 10) { // Fixo com DDD
-      return clean.replace(/(\d{2})(\d{4})(\d{4})/, '+55 $1 $2-$3');
+    
+    // Para número brasileiro completo (13 dígitos com +55)
+    if (clean.length === 13 && clean.startsWith('55')) {
+      return clean.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2) $3-$4');
     }
+    // Para número com 11 dígitos (com DDD e 9 dígitos - celular)
+    else if (clean.length === 11) {
+      return clean.replace(/(\d{2})(\d{5})(\d{4})/, '+55 ($1) $2-$3');
+    }
+    // Para número com 10 dígitos (com DDD e 8 dígitos - fixo)
+    else if (clean.length === 10) {
+      return clean.replace(/(\d{2})(\d{4})(\d{4})/, '+55 ($1) $2-$3');
+    }
+    // Para número com 9 dígitos (sem DDD - celular)
+    else if (clean.length === 9) {
+      return `+55 (00) ${clean.slice(0, 5)}-${clean.slice(5)}`;
+    }
+    // Para número com 8 dígitos (sem DDD - fixo)
+    else if (clean.length === 8) {
+      return `+55 (00) ${clean.slice(0, 4)}-${clean.slice(4)}`;
+    }
+    
+    // Fallback para números em outro formato
     return phone;
   };
 

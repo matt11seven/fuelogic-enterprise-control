@@ -109,14 +109,14 @@ export const getAllContacts = async (): Promise<Contact[]> => {
  */
 export const searchContacts = async (term: string): Promise<Contact[]> => {
   try {
-    const response = await axios.get(`${API_URL}/contacts/search`, {
+    const response = await axios.get(`${API_BASE_URL}/search`, {
       params: { term },
       headers: getAuthHeader()
     });
     return response.data;
   } catch (error) {
-    console.error('Erro ao pesquisar contatos:', error);
-    throw error;
+    console.error('[ERRO] Erro ao pesquisar contatos:', error);
+    return [];
   }
 };
 
@@ -126,13 +126,13 @@ export const searchContacts = async (term: string): Promise<Contact[]> => {
  */
 export const filterContactsByType = async (type: string): Promise<Contact[]> => {
   try {
-    const response = await axios.get(`${API_URL}/contacts/filter/${type}`, {
+    const response = await axios.get(`${API_BASE_URL}/filter/${type}`, {
       headers: getAuthHeader()
     });
     return response.data;
   } catch (error) {
-    console.error('Erro ao filtrar contatos:', error);
-    throw error;
+    console.error('[ERRO] Erro ao filtrar contatos:', error);
+    return [];
   }
 };
 
@@ -142,12 +142,12 @@ export const filterContactsByType = async (type: string): Promise<Contact[]> => 
  */
 export const getContactById = async (id: number): Promise<Contact> => {
   try {
-    const response = await axios.get(`${API_URL}/contacts/${id}`, {
+    const response = await axios.get(`${API_BASE_URL}/${id}`, {
       headers: getAuthHeader()
     });
     return response.data;
   } catch (error) {
-    console.error(`Erro ao buscar contato ${id}:`, error);
+    console.error(`[ERRO] Erro ao buscar contato ${id}:`, error);
     throw error;
   }
 };
@@ -158,12 +158,23 @@ export const getContactById = async (id: number): Promise<Contact> => {
  */
 export const createContact = async (contact: Contact): Promise<Contact> => {
   try {
-    const response = await axios.post(`${API_URL}/contacts`, contact, {
+    console.log('[DEBUG] Tentando criar contato com URL:', API_BASE_URL);
+    console.log('[DEBUG] Dados do contato:', contact);
+    console.log('[DEBUG] Headers:', getAuthHeader());
+    
+    const response = await axios.post(API_BASE_URL, contact, {
       headers: getAuthHeader()
     });
+    
+    console.log('[DEBUG] Resposta do cadastro de contato:', response);
     return response.data;
-  } catch (error) {
-    console.error('Erro ao criar contato:', error);
+  } catch (error: any) {
+    console.error('[ERRO] Erro ao criar contato:', error);
+    if (error.response) {
+      console.error('[ERRO] Status:', error.response.status);
+      console.error('[ERRO] Data:', error.response.data);
+      console.error('[ERRO] Headers:', error.response.headers);
+    }
     throw error;
   }
 };
@@ -175,12 +186,12 @@ export const createContact = async (contact: Contact): Promise<Contact> => {
  */
 export const updateContact = async (id: number, contact: Contact): Promise<Contact> => {
   try {
-    const response = await axios.put(`${API_URL}/contacts/${id}`, contact, {
+    const response = await axios.put(`${API_BASE_URL}/${id}`, contact, {
       headers: getAuthHeader()
     });
     return response.data;
   } catch (error) {
-    console.error(`Erro ao atualizar contato ${id}:`, error);
+    console.error(`[ERRO] Erro ao atualizar contato ${id}:`, error);
     throw error;
   }
 };
@@ -191,11 +202,11 @@ export const updateContact = async (id: number, contact: Contact): Promise<Conta
  */
 export const deleteContact = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_URL}/contacts/${id}`, {
+    await axios.delete(`${API_BASE_URL}/${id}`, {
       headers: getAuthHeader()
     });
   } catch (error) {
-    console.error(`Erro ao remover contato ${id}:`, error);
+    console.error(`[ERRO] Erro ao remover contato ${id}:`, error);
     throw error;
   }
 };
@@ -209,7 +220,7 @@ export const importContactsFromCSV = async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await axios.post(`${API_URL}/contacts/import`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/import`, formData, {
       headers: {
         ...getAuthHeader(),
         'Content-Type': 'multipart/form-data'
@@ -218,7 +229,7 @@ export const importContactsFromCSV = async (file: File): Promise<any> => {
     
     return response.data;
   } catch (error) {
-    console.error('Erro ao importar contatos:', error);
+    console.error('[ERRO] Erro ao importar contatos:', error);
     throw error;
   }
 };
@@ -228,7 +239,7 @@ export const importContactsFromCSV = async (file: File): Promise<any> => {
  */
 export const exportContactsToCSV = async (): Promise<void> => {
   try {
-    const response = await axios.get(`${API_URL}/contacts/export`, {
+    const response = await axios.get(`${API_BASE_URL}/export`, {
       headers: getAuthHeader(),
       responseType: 'blob'
     });
@@ -247,7 +258,7 @@ export const exportContactsToCSV = async (): Promise<void> => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(link);
   } catch (error) {
-    console.error('Erro ao exportar contatos:', error);
+    console.error('[ERRO] Erro ao exportar contatos:', error);
     throw error;
   }
 };
