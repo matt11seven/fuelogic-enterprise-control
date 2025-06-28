@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth');
 const truckRoutes = require('./routes/trucks');
 const contactRoutes = require('./routes/contacts');
 const webhookRoutes = require('./routes/webhooks');
+const inspectionAlertRoutes = require('./routes/inspection-alerts');
 const db = require('./db');
 
 // Inicialização do app
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/trucks', truckRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/inspection-alerts', inspectionAlertRoutes);
 
 // Rota de status para verificar se o servidor está online
 app.get('/api/status', (req, res) => {

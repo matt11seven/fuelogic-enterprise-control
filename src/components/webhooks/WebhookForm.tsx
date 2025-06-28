@@ -4,7 +4,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,8 +19,9 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import webhookApi, { Webhook, InternalContact } from "@/services/webhook-api";
+import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WebhookFormProps {
@@ -47,7 +49,7 @@ const WebhookForm = ({
   const [isTesting, setIsTesting] = useState(false);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [urlError, setUrlError] = useState('');
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; data?: any } | null>(null);
   const [contactsError, setContactsError] = useState('');
 
   // Resetar o formulário quando aberto ou dados iniciais alterados
@@ -144,18 +146,20 @@ const WebhookForm = ({
     setTestResult(null);
     
     try {
+      // Envia a requisição de teste e aguarda a resposta do backend
       const result = await webhookApi.testWebhook(initialData.id);
-      setTestResult(result);
       
-      // Mostrar resultado em um alerta
-      if (result.success) {
-        alert(`Teste bem-sucedido: ${result.message}`);
-      } else {
-        alert(`Falha no teste: ${result.message}`);
-      }
+      // Backend retornou uma resposta - agora podemos mostrar o resultado
+      setTestResult(result);
+      console.log('Resultado do teste:', result);
+      
+      // Não mostramos alertas - os resultados serão exibidos na interface
     } catch (error) {
       console.error('Erro ao testar webhook:', error);
-      alert(`Erro ao testar webhook: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      setTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
     } finally {
       setIsTesting(false);
     }
@@ -192,11 +196,11 @@ const WebhookForm = ({
       <DialogContent className="sm:max-w-[500px]" aria-describedby="webhook-form-description">
         <DialogHeader>
           <DialogTitle>
-            {initialData ? 'Editar Webhook' : 'Novo Webhook'}
+            {initialData ? 'Editar Webhook' : 'Criar Novo Webhook'}
           </DialogTitle>
-          <p id="webhook-form-description" className="sr-only">
-            Formulário para criar ou editar configurações de webhook para notificações de eventos.
-          </p>
+          <DialogDescription>
+            Configure as opções do webhook abaixo. Após salvar, você pode testá-lo.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
@@ -331,6 +335,41 @@ const WebhookForm = ({
             </div>
           )}
         </div>
+        
+        {/* Seção para mostrar o resultado do teste, se disponível */}
+        {testResult && (
+          <div 
+            className={cn(
+              "p-4 mt-4 mb-4 rounded-md flex items-start gap-2",
+              testResult.success 
+                ? "bg-green-50 border border-green-200 text-green-700" 
+                : "bg-red-50 border border-red-200 text-red-700"
+            )}
+          >
+            {testResult.success ? (
+              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <p className="font-medium">
+                {testResult.success ? "Teste concluído com sucesso" : "Falha no teste"}
+              </p>
+              <p className="text-sm">{testResult.message}</p>
+              
+              {/* Se houver dados detalhados e for bem-sucedido, mostrar mais informações */}
+              {testResult.success && testResult.data && (
+                <div className="mt-2 text-xs">
+                  {testResult.data.webhook?.integration === 'generic' ? (
+                    <p>URL: {testResult.data.webhook.url}</p>
+                  ) : (
+                    <p>Contatos: {Object.keys(testResult.data.webhook.selected_contacts || {}).length}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading || isTesting}>

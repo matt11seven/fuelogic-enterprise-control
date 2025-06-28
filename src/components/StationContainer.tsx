@@ -3,6 +3,8 @@ import { TankData } from "@/types/api";
 import StationCard from "./StationCard";
 import StationListView from "./StationListView";
 import ViewToggle from "./ViewToggle";
+import { sendInspectionAlert } from "@/services/inspection-api";
+import { toast } from "@/hooks/use-toast";
 
 interface Tank {
   id: string;
@@ -40,11 +42,57 @@ export function StationContainer({ stations, onTankSelect, onQuantityChange, sel
     onQuantityChange(stationId, tankId, 1000); // 1000L como quantidade padrão
   };
   
-  const handleMarkInspection = (stationId: string, tankId: string) => {
-    // Implementação para marcar inspeção
-    console.log(`Marcando inspeção para tanque ${tankId} do posto ${stationId}`);
-    // Aqui você pode abrir um modal para agendar inspeção
-    alert(`Inspeção agendada para o tanque ${tankId} do posto ${stationId}`);
+  const handleMarkInspection = async (stationId: string, tankId: string) => {
+    // Buscar a estação e o tanque pelos seus IDs
+    const station = stations.find(s => s.id === stationId);
+    if (!station) return;
+    
+    const tank = station.tanks.find(t => t.id === tankId);
+    if (!tank || !tank.apiData) return;
+    
+    // Verificar se o tanque tem dados de API e água detectada
+    if (tank.apiData.QuantidadeDeAgua && tank.apiData.QuantidadeDeAgua > 0) {
+      try {
+        toast({
+          title: "Enviando alerta de inspeção...",
+          description: "Enviando notificação para os webhooks configurados.",
+        });
+        
+        // Enviar o alerta de inspeção através da API
+        const response = await sendInspectionAlert([tank.apiData]);
+        
+        // Mostrar resultado do envio
+        if (response.success) {
+          const sucessos = response.resultados.filter(r => r.success).length;
+          const total = response.resultados.length;
+          
+          toast({
+            title: "Alerta de inspeção enviado",
+            description: `Entregue com sucesso para ${sucessos} de ${total} webhooks configurados`,
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Falha parcial no envio",
+            description: response.message,
+            variant: "destructive"
+          });
+        }
+      } catch (error: any) {
+        console.error("Erro ao enviar alerta de inspeção:", error);
+        toast({
+          title: "Erro ao enviar alerta",
+          description: error.message || "Não foi possível enviar o alerta de inspeção",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Alerta não enviado",
+        description: "Este tanque não tem água detectada para gerar um alerta.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleViewHistory = (stationId: string, tankId: string) => {
