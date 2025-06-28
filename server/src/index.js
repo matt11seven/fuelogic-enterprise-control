@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const truckRoutes = require('./routes/trucks');
+const contactRoutes = require('./routes/contacts');
 const db = require('./db');
 
 // Inicialização do app
@@ -16,6 +17,7 @@ app.use(express.json());
 // Rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/trucks', truckRoutes);
+app.use('/api/contacts', contactRoutes);
 
 // Rota de status para verificar se o servidor está online
 app.get('/api/status', (req, res) => {

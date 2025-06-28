@@ -15,8 +15,11 @@ import {
   Cpu, 
   PackageOpen,
   BarChart4,
-  ArrowLeft
+  ArrowLeft,
+  Users
 } from "lucide-react";
+
+import PeopleManager from "@/components/people/PeopleManager";
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("order-rules");
@@ -51,7 +54,7 @@ const SettingsPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="order-rules" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-5 mb-8">
+            <TabsList className="grid grid-cols-6 mb-8">
               <TabsTrigger value="order-rules" className="flex items-center">
                 <PackageOpen className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Regras de Pedido</span>
@@ -76,6 +79,11 @@ const SettingsPage = () => {
                 <Cpu className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Integrações APIs</span>
                 <span className="sm:hidden">APIs</span>
+              </TabsTrigger>
+              <TabsTrigger value="people" className="flex items-center">
+                <Users className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Pessoas</span>
+                <span className="sm:hidden">Pessoas</span>
               </TabsTrigger>
             </TabsList>
             
@@ -214,6 +222,24 @@ const SettingsPage = () => {
                 Funcionalidade em desenvolvimento. Aqui você poderá gerenciar as integrações 
                 com APIs externas.
               </p>
+            </TabsContent>
+
+            {/* Conteúdo da aba Pessoas */}
+            <TabsContent value="people" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-emerald-500" />
+                    Gerenciamento de Contatos
+                  </CardTitle>
+                  <CardDescription>
+                    Cadastre e gerencie distribuidoras, fornecedores, gerentes e outros contatos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PeopleManager />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </CardContent>
