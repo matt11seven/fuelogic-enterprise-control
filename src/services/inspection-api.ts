@@ -3,10 +3,61 @@ import axios from 'axios';
 // Definindo a URL base da API de acordo com o ambiente
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-// Removendo /api do BASE_URL se já estiver presente para evitar duplicação
+// Construindo a URL da API corretamente
 const API_BASE_URL = BASE_URL.endsWith('/api') 
   ? `${BASE_URL}/inspection-alerts`
   : `${BASE_URL}/api/inspection-alerts`;
+
+// Log para depuração
+console.log('Inspeção API Base URL:', API_BASE_URL);
+
+/**
+ * Obtém o cabeçalho de autenticação JWT - mesmo método usado em webhook-api.ts
+ */
+const getAuthHeader = () => {
+  // Verificar primeiro se há um usuário armazenado no localStorage
+  const storedUser = localStorage.getItem('fuelogic_user');
+  
+  if (storedUser) {
+    try {
+      // Tentar analisar o usuário armazenado
+      const user = JSON.parse(storedUser);
+      
+      // Verificar se o token existe no objeto do usuário
+      if (user && user.token) {
+        console.log('Token encontrado no objeto fuelogic_user');
+        return {
+          headers: {
+            'Authorization': `Bearer ${user.token}`,
+            'Content-Type': 'application/json'
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Erro ao analisar usuário do localStorage:', error);
+    }
+  }
+  
+  // Fallback para token antigo se o novo formato não estiver disponível
+  const token = localStorage.getItem('token');
+  if (token) {
+    console.log('Token encontrado diretamente como token');
+    return {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+  }
+  
+  // Se nenhum token for encontrado
+  console.log('Nenhum token encontrado');
+  return {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+};
 
 // Interfaces para dados do tanque
 export interface TankInspectionData {
@@ -40,30 +91,47 @@ export interface InspectionAlertResponse {
  */
 export const sendInspectionAlert = async (tankData: TankInspectionData[]): Promise<InspectionAlertResponse> => {
   try {
-    const token = localStorage.getItem('token');
+    // Obter cabeçalhos de autenticação usando a mesma função de webhook-api.ts
+    const authConfig = getAuthHeader();
     
-    if (!token) {
-      throw new Error('Não autenticado');
-    }
+    // Log para depuração - mostrar cabeçalhos sem expor o token completo
+    console.log('Headers para requisição:', { 
+      ...authConfig.headers,
+      'Authorization': authConfig.headers.Authorization ? 
+        'Bearer ' + authConfig.headers.Authorization.substring(7, 15) + '...[truncado]' : 
+        'Ausente'
+    });
+
+    // Log para depurar a URL completa e os dados
+    const url = `${API_BASE_URL}/send`;
+    console.log('Enviando inspeção para URL:', url);
+    console.log('Dados:', tankData);
     
     const response = await axios.post(
-      `${API_BASE_URL}/inspection-alerts/send`,
+      url,
       { tankData },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      }
+      authConfig
     );
     
+    console.log('Resposta recebida:', response.status, response.data);
     return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Erro ao enviar alerta de inspeção');
+  } catch (error: any) {
+    console.error('Erro detalhado ao enviar alerta:', error);
+    
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // Erro com resposta do servidor
+        console.error('Erro de resposta:', error.response.status, error.response.data);
+        throw new Error(error.response.data.message || error.response.data.error || `Erro ${error.response.status} ao enviar alerta de inspeção`);
+      } else if (error.request) {
+        // Erro sem resposta do servidor (problema de conectividade)
+        console.error('Erro de request sem resposta:', error.request);
+        throw new Error('Servidor não respondeu à requisição. Verifique se o servidor está rodando.');
+      } 
     }
     
-    throw new Error('Erro de conexão ao enviar alerta de inspeção');
+    // Erro genérico
+    throw new Error(`Erro de conexão: ${error.message || 'Desconhecido'}`);
   }
 };
 
