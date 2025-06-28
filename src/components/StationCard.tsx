@@ -140,7 +140,7 @@ const StationCard = ({
           <span className="text-xs sm:text-sm">{tank.code}</span>
           {hasWater && (
             <div 
-              className="absolute -bottom-1 -right-1 bg-blue-400 rounded-full w-4 h-4 border-2 border-blue-900 flex items-center justify-center shadow-lg z-10"
+              className="absolute -bottom-0.5 -right-0.5 bg-blue-400 rounded-full w-4 h-4 border-2 border-blue-900 flex items-center justify-center shadow-lg z-10"
               title={`Água detectada: ${tank.apiData?.QuantidadeDeAgua.toLocaleString()}L`}
             >
               <svg 
@@ -148,7 +148,7 @@ const StationCard = ({
                 viewBox="0 0 24 24" 
                 fill="#1e40af" 
                 stroke="none"
-                className="w-2.5 h-2.5"
+                className="w-2 h-2"
               >
                 <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
               </svg>
