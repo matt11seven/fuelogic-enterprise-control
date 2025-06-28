@@ -88,23 +88,23 @@ const TruckCard: React.FC<TruckCardProps> = ({ truck, onEdit, onDelete }) => {
           }}
         >
           <CardContent sx={{ pb: 1 }}>
-            <Grid container alignItems="center" spacing={1}>
-              <Grid item xs={7} sm={8}>
+            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mx: -0.5 }}>
+              <Box sx={{ flex: { xs: '0 0 58%', sm: '0 0 66%' }, px: 0.5 }}>
                 <Typography variant="h6" component="div" noWrap>
                   {truck.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" noWrap>
                   Motorista: {truck.driver_name}
                 </Typography>
-              </Grid>
+              </Box>
               
-              <Grid item xs={5} sm={4} sx={{ textAlign: 'right' }}>
+              <Box sx={{ flex: { xs: '0 0 42%', sm: '0 0 34%' }, px: 0.5, textAlign: 'right' }}>
                 <TruckStatusBadge status={truck.status} />
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
                   {truck.license_plate}
                 </Typography>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
             
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" color="text.secondary">
@@ -150,8 +150,8 @@ const TruckCard: React.FC<TruckCardProps> = ({ truck, onEdit, onDelete }) => {
               <Box sx={{ mt: 2 }}>
                 <Divider sx={{ my: 1 }} />
                 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1 }}>
+                  <Box sx={{ width: {xs: '100%', sm: '50%'}, px: 1, mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
                       <strong>Criado em:</strong> {formatDate(truck.created_at)}
                     </Typography>
@@ -161,17 +161,17 @@ const TruckCard: React.FC<TruckCardProps> = ({ truck, onEdit, onDelete }) => {
                         <strong>Atualizado em:</strong> {formatDate(truck.updated_at)}
                       </Typography>
                     )}
-                  </Grid>
+                  </Box>
                   
-                  <Grid item xs={12}>
+                  <Box sx={{ width: '100%', px: 1 }}>
                     <Typography variant="body2" color="text.secondary">
                       <strong>Observações:</strong>
                     </Typography>
                     <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                       {truck.observations || "Nenhuma observação registrada."}
                     </Typography>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </Box>
             </Collapse>
           </CardContent>
