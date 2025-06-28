@@ -8,6 +8,8 @@ export interface Tank {
   id: string;
   code: string;
   type: string;
+  name: string;      // Nome do tanque
+  product: string;   // Tipo de combustível/produto armazenado
   current: number;
   capacity: number;
   empty: number;
@@ -76,6 +78,8 @@ export function useTankData() {
             id: `tank-${tank.Id}`,
             code: getProductCode(tank.Produto),
             type: tank.Produto.trim(),
+            name: `Tanque ${tank.Tanque || ''}`.trim(), // Nome do tanque baseado no número
+            product: tank.Produto.trim(),              // Nome do produto/combustível
             current: tank.QuantidadeAtual,
             capacity: tank.CapacidadeDoTanque,
             empty: tank.QuantidadeVazia,

@@ -61,6 +61,29 @@ router.get('/evento/:evento', authenticateToken, async (req, res) => {
 });
 
 /**
+ * @route GET /api/webhooks/type/:type
+ * @desc Retorna webhooks por tipo específico
+ * @access Private
+ */
+router.get('/type/:type', authenticateToken, async (req, res) => {
+  // Tipos permitidos
+  const allowedTypes = ['inspection_alert', 'order_placed', 'sophia', 'sophia_ai_order'];
+  const type = req.params.type;
+  
+  if (!allowedTypes.includes(type)) {
+    return res.status(400).json({ message: 'Tipo de webhook inválido' });
+  }
+  
+  try {
+    const webhooks = await WebhookModel.findByType(type, req.user.id);
+    res.json(webhooks);
+  } catch (error) {
+    console.error(`Erro ao buscar webhooks do tipo ${type}:`, error);
+    res.status(500).json({ message: 'Erro ao buscar webhooks', error: error.message });
+  }
+});
+
+/**
  * @route GET /api/webhooks/contatos/internos
  * @desc Retorna contatos internos para seleção no SlingFlow
  * @access Private
@@ -220,6 +243,153 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 /**
+ * @route POST /api/webhooks/:id/send
+ * @desc Envia dados reais para um webhook
+ * @access Private
+ */
+router.post('/:id/send', authenticateToken, async (req, res) => {
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  try {
+    const webhookId = parseInt(req.params.id);
+    
+    // Verificar se o webhook existe
+    const webhook = await WebhookModel.findById(webhookId, req.user.id);
+    
+    if (!webhook) {
+      return res.status(404).json({ message: 'Webhook não encontrado' });
+    }
+    
+    // Verificar o tipo de integração
+    const { integration, url, name, type, selected_contacts } = webhook;
+    
+    if (!url) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Webhook ${name} (ID: ${webhookId}) não possui URL configurada` 
+      });
+    }
+    
+    // Dados enviados do corpo da requisição
+    let payload = req.body;
+    
+    // Verificar o payload e adicionar informações de log
+    if (isDevelopment) {
+      console.log(`[Webhook Send] Enviando dados para ${name} (ID: ${webhookId}, tipo: ${integration})`);
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+    }
+    
+    // Validar apenas se for SlingFlow
+    if (integration === 'slingflow') {
+      try {
+        // Webhooks SlingFlow exigem contatos internos válidos
+        // Pular validação se for de outro tipo
+        if (isDevelopment) {
+          console.log(`[Webhook Send] Validando contatos para webhook SlingFlow ${name} (ID: ${webhookId})`);
+        }
+        
+        // Verificar se selected_contacts existe e é um array
+        const contactsArray = Array.isArray(selected_contacts) ? selected_contacts : [];
+        
+        // Dupla checagem para contatos internos no SlingFlow
+        if (contactsArray.length === 0) {
+          // Para fins de desenvolvimento/testes, permitir o envio mesmo sem contatos em ambiente de desenvolvimento
+          if (isDevelopment) {
+            console.warn(`[Webhook Send] Aviso: Webhook SlingFlow ${name} (ID: ${webhookId}) não possui contatos internos selecionados, mas o envio será permitido em ambiente de desenvolvimento`);
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: `Webhook SlingFlow ${name} (ID: ${webhookId}) não possui contatos internos selecionados`
+            });
+          }
+        } else {
+          // Buscar contatos internos disponíveis
+          const internalContacts = await WebhookModel.getInternalContacts(req.user.id);
+          
+          // Verificar se todos os contatos selecionados são válidos
+          const contactIds = contactsArray.map(c => c.id || c);
+          const validContactIds = internalContacts.map(c => c.id);
+          
+          // Filtrar IDs selecionados que não são válidos
+          const invalidContactIds = contactIds.filter(id => !validContactIds.includes(id));
+          
+          if (invalidContactIds.length > 0) {
+            // Para fins de desenvolvimento/testes, permitir o envio mesmo com contatos inválidos em ambiente de desenvolvimento
+            if (isDevelopment) {
+              console.warn(`[Webhook Send] Aviso: Webhook SlingFlow ${name} (ID: ${webhookId}) possui contatos inválidos: ${invalidContactIds.join(', ')}, mas o envio será permitido em ambiente de desenvolvimento`);
+            } else {
+              return res.status(400).json({
+                success: false,
+                message: `Webhook SlingFlow ${name} (ID: ${webhookId}) possui contatos inválidos: ${invalidContactIds.join(', ')}`
+              });
+            }
+          } else {
+            // Se chegou até aqui, os contatos são válidos
+            if (isDevelopment) {
+              console.log(`[Webhook Send] Webhook SlingFlow ${name} usando contatos válidos:`, contactIds);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar contatos do SlingFlow:', error);
+        
+        // Para fins de desenvolvimento/testes, permitir o envio mesmo com erro na validação em ambiente de desenvolvimento
+        if (isDevelopment) {
+          console.warn(`[Webhook Send] Aviso: Erro ao verificar contatos do webhook SlingFlow ${name} (ID: ${webhookId}), mas o envio será permitido em ambiente de desenvolvimento: ${error.message}`);
+        } else {
+          return res.status(500).json({
+            success: false,
+            message: `Erro ao verificar contatos do webhook SlingFlow: ${error.message}`
+          });
+        }
+      }
+    }
+    
+    // Axios para fazer requisição
+    const axios = require('axios');
+    
+    // Configurar headers e opções
+    const options = {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000, // 10 segundos
+      validateStatus: (status) => {
+        // Aceitar qualquer status HTTP como válido para evitar exceções
+        return true;
+      }
+    };
+    
+    if (isDevelopment) {
+      console.log(`[Webhook Send] Enviando payload para ${webhook.name} (${url})`);
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+    }
+    
+    // Enviar requisição para o webhook
+    const response = await axios.post(url, payload, options);
+    
+    // Registrar a resposta se estiver em ambiente de desenvolvimento
+    if (isDevelopment) {
+      console.log(`[Webhook Send] Resposta do webhook ${name} (HTTP ${response.status}):`);
+      console.log(response.data);
+    }
+    
+    // Retornar resultado
+    return res.json({
+      success: true,
+      message: `Dados enviados com sucesso para ${name}. Status: ${response.status}`,
+      status: response.status,
+      data: response.data
+    });
+  } catch (error) {
+    console.error('Erro ao enviar dados para webhook:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: `Erro ao enviar dados para webhook: ${error.message}` 
+    });
+  }
+});
+
+/**
  * @route POST /api/webhooks/:id/test
  * @desc Testa um webhook enviando uma requisição de teste
  * @access Private
@@ -326,6 +496,54 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
             payment_method: "Faturamento 30 dias",
             created_at: new Date().toISOString()
           };
+        } else if (webhook.type === 'sophia_ai_order') {
+          // Para webhooks da IA Sophia, usar o mesmo formato do frontend (PurchaseSuggestionModal.tsx)
+          if (isDevelopment) {
+            console.log('Usando formato padronizado para webhook Sophia AI');
+          }
+          
+          // Criar exemplos de postos com combustíveis
+          const postoExemplo1 = {
+            nome: "Posto Exemplo - Centro",
+            cnpj: "12.345.678/0001-99",
+            combustiveis: {
+              "Gasolina Comum": {
+                quantidade: 15000,
+                unidade: "litros"
+              },
+              "Diesel S10": {
+                quantidade: 10000,
+                unidade: "litros"
+              }
+            }
+          };
+          
+          const postoExemplo2 = {
+            nome: "Posto Exemplo - Norte",
+            cnpj: "98.765.432/0001-88",
+            combustiveis: {
+              "Gasolina Comum": {
+                quantidade: 20000,
+                unidade: "litros"
+              },
+              "Etanol": {
+                quantidade: 5000,
+                unidade: "litros"
+              }
+            }
+          };
+          
+          // Sobreescrever completamente o testData para ter exatamente o formato usado no frontend
+          testData = {
+            eventType: 'sophia_ai_order',
+            timestamp: new Date().toISOString(),
+            postos: [postoExemplo1, postoExemplo2],
+            resumo: {
+              "Gasolina Comum": 35000,
+              "Diesel S10": 10000,
+              "Etanol": 5000
+            }
+          };
         } else {
           testData = {
             type: webhook.type,
@@ -418,7 +636,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         });
       }
     } else if (webhook.integration === 'slingflow') {
-      // Para integração SlingFlow, enviar requisição POST real (não mais simulação)
+      // Para integração SlingFlow, enviar requisição POST real que simula um envio verdadeiro
       try {
         const axios = require('axios');
         
@@ -428,6 +646,11 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
             success: false, 
             message: 'Este webhook SlingFlow não possui uma URL configurada' 
           });
+        }
+        
+        // Log para debug
+        if (isDevelopment) {
+          console.log('Usando payload PADRONIZADO para teste de webhook SlingFlow');
         }
 
         // Preparar dados para envio
@@ -506,25 +729,45 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
             }
           ];
           
+          // Usar o formato padronizado igual ao do frontend (InspectionAlertDialog.tsx)
+          const tanquesProcessados = tanquesComAlerta.map(tanque => ({
+            cliente: tanque.Cliente,
+            unidade: tanque.Unidade,
+            tanque: tanque.Tanque,
+            produto: tanque.Produto,
+            quantidade_agua: tanque.QuantidadeDeAgua.toFixed(1) + 'L',
+            data_medicao: new Date(tanque.DataMedicao).toLocaleDateString('pt-BR'),
+            
+            // Campos adicionais para detalhamento
+            id: tanque.Id,
+            codigo: `Tanque ${tanque.Tanque}`,
+            posto: `${tanque.Cliente} - ${tanque.Unidade}`,
+            tipo: tanque.Produto,
+            ultimaInspecao: new Date(tanque.DataMedicao).toLocaleDateString('pt-BR'),
+            diasSemInspecao: 0,
+            alertaAgua: true,
+            nivelAgua: tanque.QuantidadeDeAgua,
+            capacidade: tanque.CapacidadeDoTanque,
+            nivelAtual: tanque.QuantidadeAtual
+          }));
+          
+          // Extrair nomes das unidades para incluir na mensagem
+          const unidadesUnicas = [...new Set(tanquesProcessados.map(t => t.unidade))].filter(Boolean);
+          const unidadesTexto = unidadesUnicas.length <= 2 
+            ? unidadesUnicas.join(' e ') 
+            : `${unidadesUnicas.slice(0, -1).join(', ')} e ${unidadesUnicas[unidadesUnicas.length-1]}`;
+          
+          // Payload padronizado igual ao usado no frontend
           eventSpecificData = {
-            inspection: {
-              id: Math.floor(Math.random() * 10000) + 1000,
-              report_id: `INS-${Math.floor(Math.random() * 1000)}`,
-              timestamp: new Date().toISOString(),
-              inspector: "Sistema de Monitoramento FueLogic",
-              description: "Foi detectada água em 2 tanques que requerem atenção imediata",
-              severity: "high",
-              alerta_tipo: "agua_no_tanque",
-              // Incluir apenas tanques com quantidade de água maior que zero e apenas os campos solicitados
-              alertas: tanquesComAlerta.map(tanque => ({
-                cliente: tanque.Cliente,
-                unidade: tanque.Unidade,
-                tanque: tanque.Tanque,
-                produto: tanque.Produto,
-                quantidade_agua: tanque.QuantidadeDeAgua.toFixed(1) + 'L',
-                data_medicao: new Date(tanque.DataMedicao).toLocaleDateString('pt-BR')
-              }))
-            }
+            numero: "5584999999718", // Número padrão para alertas
+            mensagem: `ALERTA FUELOGIC: Necessário inspeção em ${tanquesProcessados.length} tanque(s) na unidade ${unidadesTexto}. Detalhes a seguir:`,
+            alertas: tanquesProcessados,
+            
+            // Metadados adicionais
+            eventType: 'inspection_alert',
+            timestamp: new Date().toISOString(),
+            quantidade: tanquesProcessados.length,
+            origem: 'fuelogic-enterprise-test'
           };
         } else if (webhook.type === 'order_placed') {
           const orderNumber = `ORD-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
@@ -544,20 +787,16 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
           };
         }
         
+        // Para SlingFlow, usamos APENAS o payload padronizado, sem campos extras
         const testData = {
-          eventType: webhook.type,
-          integration: 'slingflow',
-          test: true,
-          timestamp: new Date().toISOString(),
-          contacts: contactDetails,
-          message: `Este é um teste de notificação SlingFlow para o evento ${webhook.type}`,
-          details: {
-            source: "FueLogic Enterprise",
-            webhook_id: webhook.id,
-            webhook_name: webhook.name
-          },
+          // Removemos todos os campos extras e usamos apenas o que está no eventSpecificData
+          // para garantir que o teste seja idêntico ao envio real de alertas
           ...eventSpecificData
         };
+        
+        if (isDevelopment) {
+          console.log('Usando apenas o payload padronizado para o webhook SlingFlow');
+        }
         
         if (isDevelopment) {
           console.log('=== TESTE DE WEBHOOK SLINGFLOW (ENVIO REAL) ===');
@@ -591,16 +830,11 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
               continue; // Pular contatos sem telefone
             }
             
-            // Criar payload específico para este contato
+            // Usar o payload padronizado sem modificar
+            // Apenas garantimos que o número seja o do contato atual
             const contactTestData = {
               ...testData,
-              contacts: [contact], // Apenas um único contato por vez
-              recipient: {
-                id: contact.id,
-                name: contact.nome,
-                phone: contact.telefone,
-                type: contact.tipo
-              },
+              numero: contact.telefone // Apenas substituir o número pelo telefone do contato
             };
             
             if (isDevelopment) {

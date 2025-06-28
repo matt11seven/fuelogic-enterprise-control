@@ -1,7 +1,9 @@
-
 import { AlertTriangle, TrendingUp, CheckCircle, Droplet } from "lucide-react";
 import { Station } from "@/hooks/use-tank-data";
 import { useConfig } from "@/context/ConfigContext";
+import { useState } from "react";
+import InspectionAlertDialog from "@/components/InspectionAlertDialog";
+import { useToast } from "@/components/ui/use-toast";
 
 interface MetricCardProps {
   title: string;
@@ -11,20 +13,36 @@ interface MetricCardProps {
   bgGradient: string;
   borderColor: string;
   glowClass: string;
+  onClick?: () => void;
 }
 
 interface MetricsCardsProps {
   stations?: Station[];
 }
 
-const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, glowClass }: MetricCardProps) => (
-  <div className={`metric-card border-l-4 ${borderColor} ${glowClass} ${bgGradient}`}>
+interface TanqueAgua {
+  id: string;
+  stationName: string;
+  code: string;
+  product: string;
+  waterAmount: number;
+  capacity: number;
+  current: number;
+  days_since_inspection?: number;
+  last_inspection?: string;
+}
+
+const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, glowClass, onClick }: MetricCardProps) => (
+  <div 
+    className={`metric-card border-l-4 ${borderColor} ${glowClass} ${bgGradient} ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow duration-300' : ''}`}
+    onClick={onClick}
+  >
     <div className="flex items-center justify-between">
       <div>
         <p className="text-slate-900 dark:text-slate-400 text-sm font-semibold uppercase tracking-wide">{title}</p>
         <p className={`text-4xl font-bold ${color} text-shadow`}>{value}</p>
       </div>
-      <div className={`p-4 rounded-xl ${color === 'text-red-400' ? 'bg-red-500/20' : color === 'text-amber-400' ? 'bg-amber-500/20' : 'bg-emerald-500/20'}`}>
+      <div className={`p-4 rounded-xl ${color === 'text-red-400' ? 'bg-red-500/20' : color === 'text-amber-400' ? 'bg-amber-500/20' : color === 'text-blue-400' ? 'bg-blue-500/20' : 'bg-emerald-500/20'}`}>
         <Icon className={`w-12 h-12 ${color}`} />
       </div>
     </div>
@@ -34,12 +52,22 @@ const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, 
 const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
   // Obter os thresholds configurados do contexto global
   const { thresholds } = useConfig();
+  const { toast } = useToast();
+  
+  // Estados para o diálogo de alerta de inspeção
+  const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
+  
+  // Lista de tanques com água
+  const [tanquesComAgua, setTanquesComAgua] = useState<TanqueAgua[]>([]);
   
   // Calcular a quantidade de tanques em cada status
   let alertaCount = 0;
   let criticoCount = 0;
   let atencaoCount = 0;
   let operacionalCount = 0;
+  
+  // Lista de tanques com água para enviar alertas
+  const tanquesAgua: any[] = [];
   
   // Percorrer todos os tanques de todas as estações
   stations.forEach(station => {
@@ -49,6 +77,19 @@ const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
       if (tank.waterAmount > 0) {
         // Tanques com água têm prioridade como Alerta
         alertaCount++;
+        
+        // Adicionar à lista de tanques com água
+        tanquesAgua.push({
+          id: tank.id,
+          stationName: station.name,
+          code: tank.name,
+          product: tank.product,
+          waterAmount: tank.waterAmount,
+          capacity: tank.capacity,
+          current: tank.current,
+          last_inspection: tank.lastInspection,
+          days_since_inspection: tank.daysSinceInspection
+        });
       } else if (percentage < thresholds.threshold_critico) {
         // Tanques abaixo do threshold crítico
         criticoCount++;
@@ -62,50 +103,66 @@ const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
     });
   });
 
-  const metrics = [
-    {
-      title: "Críticos",
-      value: criticoCount,
-      icon: AlertTriangle,
-      color: "text-red-400",
-      bgGradient: "bg-gradient-to-br from-red-900/20 to-red-800/10",
-      borderColor: "border-red-500",
-      glowClass: "glow-red"
-    },
-    {
-      title: "Atenção", 
-      value: atencaoCount,
-      icon: TrendingUp,
-      color: "text-amber-400",
-      bgGradient: "bg-gradient-to-br from-amber-900/20 to-amber-800/10",
-      borderColor: "border-amber-500",
-      glowClass: "glow-amber"
-    },
-    {
-      title: "Operacionais",
-      value: operacionalCount,
-      icon: CheckCircle,
-      color: "text-emerald-400",
-      bgGradient: "bg-gradient-to-br from-emerald-900/20 to-emerald-800/10",
-      borderColor: "border-emerald-500",
-      glowClass: "glow-emerald"
-    },
-    {
-      title: "Alerta",
-      value: alertaCount,
-      icon: Droplet,
-      color: "text-blue-400",
-      bgGradient: "bg-gradient-to-br from-blue-900/30 to-blue-800/20",
-      borderColor: "border-blue-400",
-      glowClass: "glow-blue"
+  // Handler para abrir o diálogo de alerta de inspeção
+  const handleOpenInspectionDialog = () => {
+    if (tanquesAgua.length === 0) {
+      toast({
+        title: "Sem tanques com água",
+        description: "Não existem tanques com alerta de água para enviar.",
+      });
+      return;
     }
-  ];
+    
+    setTanquesComAgua(tanquesAgua);
+    setIsAlertDialogOpen(true);
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {metrics.map((metric, index) => (
-        <MetricCard key={index} {...metric} />
-      ))}
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <MetricCard
+        title="Alerta de Água"
+        value={alertaCount}
+        icon={Droplet}
+        color="text-blue-400"
+        bgGradient="bg-gradient-to-r from-blue-50 to-sky-50 dark:from-[#00164d]/80 dark:to-blue-950/30"
+        borderColor="border-blue-400"
+        glowClass="glow-blue-100"
+        onClick={handleOpenInspectionDialog}
+      />
+      <MetricCard
+        title="Crítico"
+        value={criticoCount}
+        icon={AlertTriangle}
+        color="text-red-400"
+        bgGradient="bg-gradient-to-r from-red-50 to-rose-50 dark:from-[#300] dark:to-red-950/30"
+        borderColor="border-red-400"
+        glowClass="glow-red-100"
+      />
+      <MetricCard
+        title="Atenção"
+        value={atencaoCount}
+        icon={TrendingUp}
+        color="text-amber-400"
+        bgGradient="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-[#3a2a00] dark:to-amber-950/30"
+        borderColor="border-amber-400"
+        glowClass="glow-amber-100"
+      />
+      <MetricCard
+        title="Operacional"
+        value={operacionalCount}
+        icon={CheckCircle}
+        color="text-emerald-400"
+        bgGradient="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-[#092a1f] dark:to-emerald-950/30"
+        borderColor="border-emerald-400"
+        glowClass="glow-emerald-100"
+      />
+
+      {/* Novo diálogo de alerta de inspeção */}
+      <InspectionAlertDialog 
+        open={isAlertDialogOpen} 
+        setOpen={setIsAlertDialogOpen} 
+        tanks={tanquesComAgua} 
+      />
     </div>
   );
 };

@@ -203,6 +203,37 @@ const webhookApi = {
       throw error;
     }
   },
+
+  /**
+   * Envia dados reais de alerta de inspeção para um webhook
+   */
+  async sendInspectionAlert(id: number, data: any): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/${id}/send`, data, getAuthHeader());
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Erro ao enviar alerta para webhook ${id}: ${error.response?.status || 'Desconhecido'}`);
+      }
+      throw error;
+    }
+  },
+  
+  /**
+   * Envia payload personalizado para um webhook (uso geral)
+   */
+  async sendToWebhook(id: number, payload: any): Promise<{ success: boolean; message: string }> {
+    try {
+      // Utilizamos o mesmo endpoint /send que é usado para alertas de inspeção
+      const response = await axios.post(`${API_BASE_URL}/${id}/send`, payload, getAuthHeader());
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Erro ao enviar payload para webhook ${id}: ${error.response?.status || 'Desconhecido'}`);
+      }
+      throw error;
+    }
+  },
 };
 
 export default webhookApi;

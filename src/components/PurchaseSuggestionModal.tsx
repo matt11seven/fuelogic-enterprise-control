@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Calculator, ShoppingCart, AlertCircle, AlertTriangle, CheckCircle, Truck, PlusCircle, CheckSquare } from "lucide-react";
+import { Calculator, ShoppingCart, AlertCircle, AlertTriangle, CheckCircle, Truck, PlusCircle, CheckSquare, CopyIcon, Brain } from "lucide-react";
+import webhookApi from "@/services/webhook-api";
 import { useConfig } from "@/context/ConfigContext";
 import { getAllTrucks } from "@/services/truck-api";
 import { Truck as TruckType } from "@/types/truck";
@@ -15,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import axios from 'axios';
 import { Station } from "@/hooks/use-tank-data";
 import { toast } from "@/hooks/use-toast";
 
@@ -48,6 +50,10 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
   const [priorityFilter, setPriorityFilter] = useState<string>("critical");
   const [suggestions, setSuggestions] = useState<TankPurchaseSuggestion[]>([]);
   const [calculatedOrders, setCalculatedOrders] = useState<any[]>([]);
+  // Estado para verificar se existe webhook da IA Sophia
+  const [hasSophiaWebhook, setHasSophiaWebhook] = useState(false);
+  // Estado para indicar quando está enviando para a Sophia
+  const [isSendingToSophia, setIsSendingToSophia] = useState(false);
   const [totalSuggestedLiters, setTotalSuggestedLiters] = useState<number>(0);
   
   // Estado para o modal de seleção de caminhões
@@ -55,6 +61,8 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
   
   // Lista de caminhões da frota (obtida via API)
   const [trucks, setTrucks] = useState<TruckWithSelection[]>([]);
+  // Estado para armazenar todos os caminhões disponíveis
+  const [availableTrucks, setAvailableTrucks] = useState<TruckWithSelection[]>([]);
   // Estado de carregamento
   const [isLoadingTrucks, setIsLoadingTrucks] = useState(false);
   const [truckLoadError, setTruckLoadError] = useState<string | null>(null);
@@ -270,13 +278,35 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
     return text;
   };
   
-  // Carregar caminhões ao abrir o modal
+  // Efeito para verificar se há caminhões cadastrados e webhooks da IA Sophia
   useEffect(() => {
-    if (open) {
-      loadTrucks();
-    }
-  }, [open]);
-  
+    const fetchInitialData = async () => {
+      try {
+        // Buscar caminhões
+        const trucksData = await getAllTrucks();
+        setAvailableTrucks(
+          trucksData.map(truck => ({
+            ...truck,
+            isSelected: false
+          }))
+        );
+        
+        // Verificar se existe algum webhook da IA Sophia
+        const sophiaWebhooks = await webhookApi.getWebhooksByType('sophia_ai_order');
+        setHasSophiaWebhook(sophiaWebhooks.length > 0);
+      } catch (error) {
+        console.error("Erro ao buscar dados iniciais:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar todos os dados necessários.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
   // Função para carregar caminhões da API
   const loadTrucks = async () => {
     setIsLoadingTrucks(true);
@@ -337,28 +367,160 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
       });
     }
   };
-  
-  const handleProcessSuggestion = () => {
-    const orderText = formatOrderText();
-    
-    // Copiar para o clipboard
-    navigator.clipboard.writeText(orderText)
-      .then(() => {
-        toast({
-          title: "Pedido Copiado",
-          description: `${calculatedOrders.length} tanques selecionados. Texto formatado copiado para área de transferência.`,
-        });
-        setOpen(false);
-      })
-      .catch(err => {
-        console.error('Erro ao copiar: ', err);
-        toast({
-          title: "Erro ao Copiar",
-          description: "Não foi possível copiar o texto para a área de transferência.",
-          variant: "destructive"
-        });
+
+  // Handler para copiar a sugestão de compra
+  const handleCopySuggestion = () => {
+    if (calculatedOrders.length === 0) {
+      toast({
+        title: "Sem sugestões",
+        description: "Não há sugestões de compra disponíveis para copiar.",
+        variant: "destructive",
       });
+      return;
+    }
+    
+    // Formatar o texto para ser copiado
+    const textToCopy = calculatedOrders
+      .map(order => `${order.tankType}: ${order.suggestedFill.toLocaleString('pt-BR')}L`) // Usar suggestedFill em vez de fillAmount
+      .join('\n');
+    
+    // Copiar para a área de transferência
+    navigator.clipboard.writeText(textToCopy);
+    
+    toast({
+      title: "Copiado",
+      description: "Sugestão de compra copiada para a área de transferência.",
+    });
   };
+  
+  // Handler para enviar dados para a IA Sophia
+  const handleSendToSophia = async () => {
+    if (calculatedOrders.length === 0) {
+      toast({
+        title: "Sem sugestões",
+        description: "Não há sugestões de compra disponíveis para enviar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSendingToSophia(true);
+    try {
+      // Buscar webhooks da IA Sophia
+      const sophiaWebhooks = await webhookApi.getWebhooksByType('sophia_ai_order');
+      
+      if (sophiaWebhooks.length === 0) {
+        toast({
+          title: "Webhook não encontrado",
+          description: "Não há webhooks da IA Sophia cadastrados.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Preparar os dados para envio
+      const payload = {
+        eventType: 'sophia_ai_order',
+        timestamp: new Date().toISOString(),
+        postos: Object.entries(calculatedOrders.reduce((acc, order) => {
+          // Agrupar por estação
+          if (!acc[order.stationName]) {
+            acc[order.stationName] = {
+              nome: order.stationName,
+              combustiveis: {}
+            };
+          }
+          
+          // Adicionar combustível ao grupo da estação
+          acc[order.stationName].combustiveis[order.tankType] = {
+            quantidade: order.suggestedFill, // Usar suggestedFill em vez de fillAmount
+            unidade: "litros"
+          };
+          
+          return acc;
+        }, {})).map(([_, posto]) => posto),
+        resumo: calculatedOrders.reduce((acc, order) => {
+          if (!acc[order.tankType]) acc[order.tankType] = 0;
+          acc[order.tankType] += order.suggestedFill; // Usar suggestedFill em vez de fillAmount
+          return acc;
+        }, {})
+      };
+      
+      // Enviar para cada webhook da IA Sophia
+      for (const webhook of sophiaWebhooks) {
+        try {
+          if (webhook && webhook.id) {
+            // Obter o token de autenticação de forma segura
+            let token = '';
+            
+            // Primeiro tentar obter do novo formato (fuelogic_user)
+            const storedUser = localStorage.getItem('fuelogic_user');
+            if (storedUser) {
+              try {
+                const user = JSON.parse(storedUser);
+                if (user && user.token) {
+                  token = user.token;
+                }
+              } catch (error) {
+                console.error('Erro ao analisar usuário do localStorage', error);
+              }
+            }
+            
+            // Se não encontrou no novo formato, tentar no formato antigo
+            if (!token) {
+              token = localStorage.getItem('token') || '';
+            }
+            
+            // Base URL da API - tratando corretamente o prefixo /api
+            let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+            
+            // Remover /api do final da baseUrl se existir para evitar duplicação
+            if (baseUrl.endsWith('/api')) {
+              baseUrl = baseUrl.slice(0, -4); // Remove os últimos 4 caracteres ('/api')
+            }
+            
+            // Usar o endpoint /send com o payload real - caminho correto sem duplicação
+            await axios.post(`${baseUrl}/api/webhooks/${webhook.id}/send`, payload, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Enviando payload real para webhook ${webhook.name}:`, payload);
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao enviar para webhook ${webhook.name}:`, error);
+        }
+      }
+      
+      toast({
+        title: "Enviado",
+        description: "Sugestão de compra enviada para a IA Sophia com sucesso!",
+      });
+      
+      // Fechar o dialog
+      setOpen(false);
+    } catch (error) {
+      console.error("Erro ao enviar para IA Sophia:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao enviar os dados para a IA Sophia.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingToSophia(false);
+    }
+  };
+  
+  // Carregar caminhões ao abrir o modal
+  useEffect(() => {
+    if (open) {
+      loadTrucks();
+    }
+  }, [open]);
 
   return (
     <>
@@ -530,11 +692,22 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
               Cancelar
             </Button>
             <Button 
-              onClick={handleProcessSuggestion} 
+              onClick={handleCopySuggestion} 
               disabled={calculatedOrders.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-slate-600 hover:bg-slate-700 text-white"
+              title="Copiar sugestão de compra para a área de transferência"
             >
-              Aplicar Sugestão
+              <CopyIcon className="w-4 h-4 mr-2" />
+              Copiar
+            </Button>
+            <Button 
+              onClick={handleSendToSophia} 
+              disabled={calculatedOrders.length === 0 || !hasSophiaWebhook || isSendingToSophia}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              title={!hasSophiaWebhook ? "Webhook da IA Sophia não configurado" : "Enviar para a IA Sophia"}
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              {isSendingToSophia ? "Enviando..." : "Enviar para Sophia"}
             </Button>
           </DialogFooter>
         </DialogContent>

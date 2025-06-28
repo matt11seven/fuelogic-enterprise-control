@@ -29,7 +29,7 @@ interface WebhookFormProps {
   onClose: () => void;
   onSave: (webhook: Webhook) => void;
   initialData?: Webhook;
-  preselectedType?: 'inspection_alert' | 'order_placed' | 'sophia';
+  preselectedType?: 'inspection_alert' | 'order_placed' | 'sophia_ai_order';
 }
 
 const WebhookForm = ({ 

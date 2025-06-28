@@ -155,6 +155,7 @@ const WebhookManager = () => {
               </div>
               
               <div className="flex flex-col">
+                <h4 className="font-medium text-base mb-1">{webhook.name}</h4>
                 <div className="text-sm text-gray-500 flex items-center gap-1">
                   {webhook.integration === 'slingflow' ? (
                     <>SlingFlow ({Object.keys(webhook.selected_contacts || {}).length} contatos)</>
