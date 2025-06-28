@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle, Droplet } from "lucide-react";
 import { TankData } from "@/types/api";
+import { useConfig } from "@/context/ConfigContext";
 
 interface Tank {
   id: string;
@@ -16,20 +17,27 @@ interface StatusIndicatorsProps {
 }
 
 export function StatusIndicators({ tanks, compact = false }: StatusIndicatorsProps) {
+  // Obter os thresholds configurados do contexto global
+  const { thresholds } = useConfig();
+  
+  // Converter os thresholds de porcentagem para decimal (0-1)
+  const criticalThreshold = thresholds.threshold_critico / 100;
+  const warningThreshold = thresholds.threshold_atencao / 100;
+  
   // Calcular estatísticas
   const totalTanks = tanks.length;
-  const criticalTanks = tanks.filter(tank => (tank.current / tank.capacity) < 0.2).length;
+  const criticalTanks = tanks.filter(tank => (tank.current / tank.capacity) < criticalThreshold).length;
   const warningTanks = tanks.filter(tank => {
     const percentage = tank.current / tank.capacity;
-    return percentage >= 0.2 && percentage < 0.5;
+    return percentage >= criticalThreshold && percentage < warningThreshold;
   }).length;
-  const normalTanks = tanks.filter(tank => (tank.current / tank.capacity) >= 0.5).length;
+  const normalTanks = tanks.filter(tank => (tank.current / tank.capacity) >= warningThreshold).length;
   const tanksWithWater = tanks.filter(tank => tank.apiData && tank.apiData.QuantidadeDeAgua > 0).length;
 
   // Verificar se há tanques em cada categoria
   const hasCritical = criticalTanks > 0;
   const hasWarning = warningTanks > 0;
-  const hasNormal = normalTanks > 0;
+  const hasOperacional = normalTanks > 0;
   const hasWater = tanksWithWater > 0;
 
   if (compact) {
@@ -48,7 +56,7 @@ export function StatusIndicators({ tanks, compact = false }: StatusIndicatorsPro
             <span>{warningTanks}</span>
           </div>
         )}
-        {hasNormal && (
+        {hasOperacional && (
           <div className="status-indicator flex items-center bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded-full text-xs">
             <CheckCircle className="w-3 h-3 mr-1" />
             <span>{normalTanks}</span>
@@ -89,8 +97,8 @@ export function StatusIndicators({ tanks, compact = false }: StatusIndicatorsPro
         
         {/* Tanques normais */}
         <div className="status-indicator flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${hasNormal ? 'bg-emerald-500' : 'bg-slate-700'}`} />
-          <span className="text-xs text-slate-300">Normal</span>
+          <div className={`w-3 h-3 rounded-full ${hasOperacional ? 'bg-emerald-500' : 'bg-slate-700'}`} />
+          <span className="text-xs text-slate-300">Operacional</span>
           <span className="text-xs text-emerald-400 ml-auto">{normalTanks}</span>
         </div>
         
@@ -120,7 +128,7 @@ export function StatusIndicators({ tanks, compact = false }: StatusIndicatorsPro
               style={{ width: `${(warningTanks / totalTanks) * 100}%` }}
             />
           )}
-          {hasNormal && (
+          {hasOperacional && (
             <div 
               className="h-full bg-emerald-500" 
               style={{ width: `${(normalTanks / totalTanks) * 100}%` }}

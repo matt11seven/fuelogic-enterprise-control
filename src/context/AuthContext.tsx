@@ -78,7 +78,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Verificar se existe usuário armazenado no localStorage
         const storedUser = localStorage.getItem('fuelogic_user');
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          
+          // Garantir que o token também seja restaurado no localStorage
+          if (userData.token && !localStorage.getItem('token')) {
+            localStorage.setItem('token', userData.token);
+            console.log('[INFO] Token JWT restaurado do usuário armazenado');
+          }
         }
 
         // Buscar a API key (primeiro do .env, depois do banco se necessário)
@@ -155,6 +162,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(userData);
         localStorage.setItem('fuelogic_user', JSON.stringify(userData));
         
+        // Salvar o token JWT separadamente no localStorage
+        if (userData.token) {
+          localStorage.setItem('token', userData.token);
+          console.log('[INFO] Token JWT armazenado no localStorage');
+        } else {
+          console.warn('[AVISO] Token JWT não recebido do backend');
+        }
+        
         // Usamos a apiKey do usuário (agora garantidamente não indefinida)
         setApiKey(userData.apiKey);
         
@@ -191,11 +206,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
     localStorage.removeItem('fuelogic_user');
     
-    // Limpar completamente a apiKey ao fazer logout
-    // Não queremos manter qualquer credencial após o logout
+    // Limpar completamente o token e a apiKey ao fazer logout
+    localStorage.removeItem('token');
     setApiKey(null);
     
-    console.log('[INFO] Logout realizado, apiKey removida');
+    console.log('[INFO] Logout realizado, token e apiKey removidos');
   };
 
   return (

@@ -20,6 +20,7 @@ export default {
 		},
 		extend: {
 			colors: {
+				sling: '#2DBF77', // SlingFlow
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

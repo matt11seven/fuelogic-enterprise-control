@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useConfig } from "@/context/ConfigContext";
 
 interface FuelTankProps {
   code: string;
@@ -14,6 +15,8 @@ interface FuelTankProps {
 }
 
 const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantity, onQuantityChange, waterAmount = 0 }: FuelTankProps) => {
+  // Obter os thresholds configurados do contexto global
+  const { thresholds } = useConfig();
   const percentage = (current / capacity) * 100;
   const available = capacity - current;
   
@@ -21,9 +24,9 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
     // Priorizar alerta de água sobre outros status
     if (waterAmount > 0) return { color: 'blue', label: 'Alerta', glow: 'glow-blue', animate: 'animate-pulse' };
     
-    // Status baseados no nível de combustível
-    if (percentage < 20) return { color: 'red', label: 'Crítico', glow: 'glow-red', animate: 'animate-pulse-emerald' };
-    if (percentage < 50) return { color: 'amber', label: 'Atenção', glow: 'glow-amber', animate: '' };
+    // Status baseados no nível de combustível usando thresholds configurados
+    if (percentage < thresholds.threshold_critico) return { color: 'red', label: 'Crítico', glow: 'glow-red', animate: 'animate-pulse-emerald' };
+    if (percentage < thresholds.threshold_atencao) return { color: 'amber', label: 'Atenção', glow: 'glow-amber', animate: '' };
     return { color: 'emerald', label: 'Operacional', glow: 'glow-emerald', animate: '' };
   };
 

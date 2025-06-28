@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MapPin, ArrowUpDown } from "lucide-react";
 import FuelTank from "./FuelTank";
 import TankDetails from "./TankDetails";
+import { useConfig } from "@/context/ConfigContext";
 import StatusIndicators from "./StatusIndicators";
 import { TankData } from "@/types/api";
 
@@ -27,7 +28,7 @@ interface StationCardProps {
 
 type SortType = 'number' | 'fuel';
 
-const StationCard = ({ 
+const StationCard = ({
   id, 
   name, 
   address, 
@@ -36,6 +37,8 @@ const StationCard = ({
   onQuantityChange, 
   selectedTanks 
 }: StationCardProps) => {
+  // Obter os thresholds configurados do contexto global
+  const { thresholds } = useConfig();
   const [expandedTankId, setExpandedTankId] = useState<string | null>(null);
   const [stationExpanded, setStationExpanded] = useState<boolean>(false);
   const [sortType, setSortType] = useState<SortType>('number');
@@ -106,9 +109,9 @@ const StationCard = ({
       // Priorizar alerta de água sobre outros status
       if (hasWater) return 'bg-blue-500';
       
-      // Status baseados no nível de combustível
-      if (percentage < 20) return 'bg-red-500';
-      if (percentage < 50) return 'bg-amber-500';
+      // Status baseados no nível de combustível - usando thresholds configurados
+      if (percentage < thresholds.threshold_critico) return 'bg-red-500';
+      if (percentage < thresholds.threshold_atencao) return 'bg-amber-500';
       return 'bg-emerald-500';
     };
 

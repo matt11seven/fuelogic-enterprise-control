@@ -139,7 +139,7 @@ const WebhookManager = () => {
             <div className="flex-grow">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant={webhook.integration === 'slingflow' ? "default" : "outline"} 
-                       className={webhook.integration === 'slingflow' ? "bg-purple-600" : ""}>
+                       className={webhook.integration === 'slingflow' ? "bg-sling" : ""}>
                   {webhook.integration === 'slingflow' ? "SlingFlow" : "Webhook Genérico"}
                 </Badge>
                 <span className="text-sm text-slate-500 dark:text-slate-400">

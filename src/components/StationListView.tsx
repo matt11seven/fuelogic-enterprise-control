@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChevronDown, Filter, MapPin, Search, X, ChevronsDown, ChevronsUp } from "lucide-react";
 import { TankData } from "@/types/api";
 import { Badge } from "./ui/badge";
+import { useConfig } from "@/context/ConfigContext";
 import { Button } from "./ui/button";
 import QuickActions from "./QuickActions";
 import StatusIndicators from "./StatusIndicators";
@@ -43,6 +44,8 @@ export function StationListView({
   onMarkInspection = () => {},
   onViewHistory = () => {}
 }: StationListViewProps) {
+  // Obter os thresholds configurados do contexto global
+  const { thresholds } = useConfig();
   const [expandedStations, setExpandedStations] = useState<Record<string, boolean>>({});
   const [filters, setFilters] = useState({
     status: 'all', // 'all', 'critical', 'warning', 'normal'
@@ -93,10 +96,13 @@ export function StationListView({
   };
 
   const getStationStatus = (tanks: Tank[]) => {
-    const criticalTanks = tanks.filter(tank => (tank.current / tank.capacity) < 0.2).length;
+    const criticalThreshold = thresholds.threshold_critico / 100;
+    const warningThreshold = thresholds.threshold_atencao / 100;
+    
+    const criticalTanks = tanks.filter(tank => (tank.current / tank.capacity) < criticalThreshold).length;
     const warningTanks = tanks.filter(tank => {
       const percentage = tank.current / tank.capacity;
-      return percentage >= 0.2 && percentage < 0.5;
+      return percentage >= criticalThreshold && percentage < warningThreshold;
     }).length;
 
     if (criticalTanks > 0) return { color: 'red', label: 'Crítico', count: criticalTanks };
@@ -109,9 +115,9 @@ export function StationListView({
     const hasWater = tank.apiData && tank.apiData.QuantidadeDeAgua > 0;
     
     if (hasWater) return { color: 'blue', label: 'Água', percentage };
-    if (percentage < 20) return { color: 'red', label: 'Crítico', percentage };
-    if (percentage < 50) return { color: 'amber', label: 'Atenção', percentage };
-    return { color: 'emerald', label: 'Normal', percentage };
+    if (percentage < thresholds.threshold_critico) return { color: 'red', label: 'Crítico', percentage };
+    if (percentage < thresholds.threshold_atencao) return { color: 'amber', label: 'Atenção', percentage };
+    return { color: 'emerald', label: 'Operacional', percentage };
   };
   
   // Função para formatar a quantidade de água em litros
@@ -149,11 +155,13 @@ export function StationListView({
       const hasTanksWithStatus = station.tanks.some(tank => {
         const percentage = tank.current / tank.capacity;
         const hasWater = tank.apiData && tank.apiData.QuantidadeDeAgua > 0;
+        const criticalThreshold = thresholds.threshold_critico / 100;
+        const warningThreshold = thresholds.threshold_atencao / 100;
         
         switch (filters.status) {
-          case 'critical': return percentage < 0.2;
-          case 'warning': return percentage >= 0.2 && percentage < 0.5;
-          case 'normal': return percentage >= 0.5 && !hasWater;
+          case 'critical': return percentage < criticalThreshold;
+          case 'warning': return percentage >= criticalThreshold && percentage < warningThreshold;
+          case 'normal': return percentage >= warningThreshold && !hasWater;
           case 'water': return hasWater;
           default: return true;
         }
@@ -165,11 +173,14 @@ export function StationListView({
     if (filters.level !== 'all') {
       const hasTanksWithLevel = station.tanks.some(tank => {
         const percentage = tank.current / tank.capacity;
+        // Usar thresholds do contexto para definir os filtros
+        const criticalThreshold = thresholds.threshold_critico / 100;
+        const warningThreshold = thresholds.threshold_atencao / 100;
         
         switch (filters.level) {
-          case 'low': return percentage < 0.3;
-          case 'medium': return percentage >= 0.3 && percentage < 0.7;
-          case 'high': return percentage >= 0.7;
+          case 'low': return percentage < criticalThreshold;
+          case 'medium': return percentage >= criticalThreshold && percentage < warningThreshold;
+          case 'high': return percentage >= warningThreshold;
           default: return true;
         }
       });
@@ -236,9 +247,9 @@ export function StationListView({
                   className="select-enhanced pl-10 pr-3 py-2 rounded-lg appearance-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
                 >
                   <option value="all">Todos os níveis</option>
-                  <option value="low">Baixo (&lt;30%)</option>
-                  <option value="medium">Médio (30-70%)</option>
-                  <option value="high">Alto (&gt;70%)</option>
+                  <option value="low">Crítico (&lt;{thresholds.threshold_critico}%)</option>
+                  <option value="medium">Atenção ({thresholds.threshold_critico}-{thresholds.threshold_atencao}%)</option>
+                  <option value="high">Operacional (&gt;{thresholds.threshold_atencao}%)</option>
                 </select>
                 <Filter className="absolute left-3 top-2.5 h-5 w-5 text-slate-500 dark:text-slate-400" />
               </div>
@@ -442,6 +453,7 @@ export function StationListView({
                                   onChange={(e) => onQuantityChange(station.id, tank.id, Number(e.target.value))}
                                   max={tank.capacity - tank.current}
                                   min={0}
+                                  step="5000"
                                   className="form-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
                                   placeholder="Digite a quantidade"
                                 />

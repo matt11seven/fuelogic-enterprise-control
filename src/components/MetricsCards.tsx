@@ -1,6 +1,7 @@
 
 import { AlertTriangle, TrendingUp, CheckCircle, Droplet } from "lucide-react";
 import { Station } from "@/hooks/use-tank-data";
+import { useConfig } from "@/context/ConfigContext";
 
 interface MetricCardProps {
   title: string;
@@ -31,6 +32,9 @@ const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, 
 );
 
 const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
+  // Obter os thresholds configurados do contexto global
+  const { thresholds } = useConfig();
+  
   // Calcular a quantidade de tanques em cada status
   let alertaCount = 0;
   let criticoCount = 0;
@@ -45,14 +49,14 @@ const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
       if (tank.waterAmount > 0) {
         // Tanques com água têm prioridade como Alerta
         alertaCount++;
-      } else if (percentage < 20) {
-        // Tanques abaixo de 20% são críticos
+      } else if (percentage < thresholds.threshold_critico) {
+        // Tanques abaixo do threshold crítico
         criticoCount++;
-      } else if (percentage < 50) {
-        // Tanques entre 20% e 50% estão em atenção
+      } else if (percentage < thresholds.threshold_atencao) {
+        // Tanques entre threshold crítico e de atenção
         atencaoCount++;
       } else {
-        // Tanques acima de 50% estão operacionais
+        // Tanques acima do threshold de atenção estão operacionais
         operacionalCount++;
       }
     });

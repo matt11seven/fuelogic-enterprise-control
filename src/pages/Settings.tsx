@@ -19,6 +19,8 @@ import {
   Users
 } from "lucide-react";
 
+import ThresholdConfiguration from "@/components/configuration/ThresholdConfiguration";
+
 import PeopleManager from "@/components/people/PeopleManager";
 import WebhookManager from "@/components/webhooks/WebhookManager";
 
@@ -91,6 +93,9 @@ const SettingsPage = () => {
             {/* Conteúdo da aba Regras de Pedido */}
             <TabsContent value="order-rules" className="space-y-6">
               <h2 className="text-xl font-semibold mb-4">Regras de Pedido</h2>
+              
+              {/* Componente de configuração de thresholds */}
+              <ThresholdConfiguration />
               
               <Card>
                 <CardHeader>

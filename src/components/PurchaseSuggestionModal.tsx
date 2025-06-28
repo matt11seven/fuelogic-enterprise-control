@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { Calculator, ShoppingCart, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react";
+import { Calculator, ShoppingCart, AlertCircle, AlertTriangle, CheckCircle, Truck, PlusCircle, CheckSquare } from "lucide-react";
+import { useConfig } from "@/context/ConfigContext";
+import { getAllTrucks } from "@/services/truck-api";
+import { Truck as TruckType } from "@/types/truck";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,17 +31,33 @@ interface TankPurchaseSuggestion {
   priority: "critical" | "warning" | "normal";
 }
 
+// Interface para caminhão com seleção
+interface TruckWithSelection extends TruckType {
+  isSelected: boolean;
+}
+
 interface PurchaseSuggestionModalProps {
   stations: Station[] | undefined;
 }
 
 export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestionModalProps): JSX.Element {
+  // Obter os thresholds configurados do contexto global
+  const { thresholds } = useConfig();
   const [open, setOpen] = useState(false);
   const [truckCapacity, setTruckCapacity] = useState<number>(0);
   const [priorityFilter, setPriorityFilter] = useState<string>("critical");
   const [suggestions, setSuggestions] = useState<TankPurchaseSuggestion[]>([]);
   const [calculatedOrders, setCalculatedOrders] = useState<any[]>([]);
   const [totalSuggestedLiters, setTotalSuggestedLiters] = useState<number>(0);
+  
+  // Estado para o modal de seleção de caminhões
+  const [trucksDialogOpen, setTrucksDialogOpen] = useState(false);
+  
+  // Lista de caminhões da frota (obtida via API)
+  const [trucks, setTrucks] = useState<TruckWithSelection[]>([]);
+  // Estado de carregamento
+  const [isLoadingTrucks, setIsLoadingTrucks] = useState(false);
+  const [truckLoadError, setTruckLoadError] = useState<string | null>(null);
 
   // Calcular sugestões quando o modal é aberto
   useEffect(() => {
@@ -53,16 +72,20 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
     // Coletar todos os tanques e calcular sugestões
     const allSuggestions: TankPurchaseSuggestion[] = [];
 
+    // Converter os thresholds de porcentagem para decimal (0-1)
+    const criticalThreshold = thresholds.threshold_critico / 100;
+    const warningThreshold = thresholds.threshold_atencao / 100;
+
     stations.forEach(station => {
       station.tanks.forEach(tank => {
         const currentPercentage = tank.current / tank.capacity;
         const emptySpace = tank.capacity - tank.current;
         let priority: "critical" | "warning" | "normal" = "normal";
 
-        // Determinar prioridade com base na porcentagem atual
-        if (currentPercentage < 0.2) {
+        // Determinar prioridade com base na porcentagem atual usando thresholds configurados
+        if (currentPercentage < criticalThreshold) {
           priority = "critical";
-        } else if (currentPercentage < 0.5) {
+        } else if (currentPercentage < warningThreshold) {
           priority = "warning";
         }
 
@@ -247,6 +270,74 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
     return text;
   };
   
+  // Carregar caminhões ao abrir o modal
+  useEffect(() => {
+    if (open) {
+      loadTrucks();
+    }
+  }, [open]);
+  
+  // Função para carregar caminhões da API
+  const loadTrucks = async () => {
+    setIsLoadingTrucks(true);
+    setTruckLoadError(null);
+    try {
+      const trucksData = await getAllTrucks();
+      // Filtrar apenas caminhões ativos e adicionar propriedade isSelected
+      const activeTrucks = trucksData
+        .filter(truck => truck.status === 'active')
+        .map(truck => ({
+          ...truck,
+          isSelected: false
+        }));
+      setTrucks(activeTrucks);
+    } catch (error) {
+      console.error('Erro ao carregar caminhões:', error);
+      setTruckLoadError('Não foi possível carregar os caminhões. Tente novamente.');
+      toast({
+        title: "Erro ao carregar caminhões",
+        description: "Ocorreu um erro ao buscar os dados dos caminhões.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingTrucks(false);
+    }
+  };
+
+  // Função para alternar a seleção de um caminhão
+  const toggleTruckSelection = (truckId: number) => {
+    setTrucks(trucks.map(truck => 
+      truck.id === truckId ? { ...truck, isSelected: !truck.isSelected } : truck
+    ));
+  };
+  
+  // Função para selecionar todos os caminhões ativos
+  const selectAllTrucks = () => {
+    setTrucks(trucks.map(truck => ({ ...truck, isSelected: true })));
+    toast({
+      title: "Todos os caminhões selecionados",
+      description: `${trucks.length} caminhões foram selecionados.`,
+    });
+  };
+  
+  // Função para calcular e aplicar a capacidade total dos caminhões selecionados
+  const applySelectedTrucksCapacity = () => {
+    const totalCapacity = trucks
+      .filter(truck => truck.isSelected)
+      .reduce((sum, truck) => sum + truck.capacity, 0);
+      
+    setTruckCapacity(totalCapacity);
+    setTrucksDialogOpen(false);
+    
+    // Notificar o usuário
+    if (totalCapacity > 0) {
+      toast({
+        title: "Capacidade Atualizada",
+        description: `Capacidade disponível atualizada para ${totalCapacity.toLocaleString()} litros.`,
+      });
+    }
+  };
+  
   const handleProcessSuggestion = () => {
     const orderText = formatOrderText();
     
@@ -306,7 +397,7 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
                   <RadioGroupItem value="critical" id="critical" />
                   <Label htmlFor="critical" className="flex items-center">
                     <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
-                    Somente tanques críticos (&lt;20%)
+                    Somente tanques críticos (&lt;{thresholds.threshold_critico}%)
                   </Label>
                 </div>
                 
@@ -314,7 +405,7 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
                   <RadioGroupItem value="critical_warning" id="critical_warning" />
                   <Label htmlFor="critical_warning" className="flex items-center">
                     <AlertTriangle className="w-4 h-4 mr-2 text-amber-500" />
-                    Tanques críticos + atenção (&lt;50%)
+                    Tanques críticos + atenção (&lt;{thresholds.threshold_atencao}%)
                   </Label>
                 </div>
                 
@@ -342,6 +433,16 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
                   placeholder="0 = ilimitado"
                 />
                 <span>litros {truckCapacity === 0 && "(ilimitado)"}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTrucksDialogOpen(true)}
+                  className="ml-2 flex items-center bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/40"
+                >
+                  <Truck className="w-4 h-4 mr-1" />
+                  Selecionar Caminhões
+                </Button>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Pedidos são calculados em múltiplos de 5.000 litros
@@ -434,6 +535,116 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               Aplicar Sugestão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog para seleção de caminhões */}
+      <Dialog open={trucksDialogOpen} onOpenChange={setTrucksDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center">
+              <Truck className="w-5 h-5 mr-2 text-amber-500" />
+              Selecionar Caminhões
+            </DialogTitle>
+            <DialogDescription>
+              Selecione os caminhões disponíveis para calcular a capacidade total.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {/* Botão para selecionar todos os caminhões ativos */}
+            {!isLoadingTrucks && !truckLoadError && trucks.length > 0 && (
+              <div className="mb-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={selectAllTrucks}
+                  className="w-full bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/40"
+                >
+                  <CheckSquare className="w-4 h-4 mr-2" />
+                  Selecionar todos os caminhões
+                </Button>
+              </div>
+            )}
+            
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+              {isLoadingTrucks ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+                </div>
+              ) : truckLoadError ? (
+                <div className="text-center py-8 text-red-500">
+                  <AlertCircle className="mx-auto h-10 w-10 mb-2" />
+                  <p>{truckLoadError}</p>
+                  <Button 
+                    onClick={loadTrucks} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                  >
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : trucks.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <p>Nenhum caminhão ativo encontrado.</p>
+                </div>
+              ) : (
+                trucks.map(truck => (
+                  <div 
+                    key={truck.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${truck.isSelected ? 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700' : 'border-slate-200 dark:border-slate-700'}`}
+                  >
+                    <div className="flex items-center w-full">
+                      <input
+                        type="checkbox"
+                        checked={truck.isSelected}
+                        onChange={() => toggleTruckSelection(truck.id)}
+                        id={`truck-${truck.id}`}
+                        className="w-4 h-4 rounded border-slate-400 dark:border-slate-600 text-amber-500 focus:ring-amber-500"
+                      />
+                      <label htmlFor={`truck-${truck.id}`} className="ml-3 cursor-pointer flex-1">
+                        <div className="font-medium">{truck.name}</div>
+                        <div className="flex justify-between">
+                          <div className="text-sm text-slate-500 dark:text-slate-400">Capacidade: {truck.capacity.toLocaleString()} litros</div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">Placa: {truck.license_plate}</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Resumo da capacidade total */}
+            <div className="mt-4 bg-slate-50/80 dark:bg-slate-800/30 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/50">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-700 dark:text-slate-300 font-medium">Capacidade total:</span>
+                <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                  {trucks.filter(t => t.isSelected).reduce((sum, t) => sum + t.capacity, 0).toLocaleString()} litros
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => setTrucksDialogOpen(false)}
+              className="mr-2"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="button" 
+              onClick={applySelectedTrucksCapacity}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Aplicar Seleção
             </Button>
           </DialogFooter>
         </DialogContent>
