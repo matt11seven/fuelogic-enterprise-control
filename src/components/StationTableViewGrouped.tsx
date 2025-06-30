@@ -78,6 +78,14 @@ export function StationTableViewGrouped({
     return waterAmount.toLocaleString(undefined, {maximumFractionDigits: 1});
   };
 
+  // Função para lidar com mudanças na quantidade
+  const handleQuantityChange = (stationId: string, tankId: string, quantity: number) => {
+    // Automaticamente seleciona o tanque se a quantidade for maior que 0
+    const shouldSelect = quantity > 0;
+    onTankSelect(stationId, tankId, shouldSelect);
+    onQuantityChange(stationId, tankId, quantity);
+  };
+
   // Filtrar estações
   const filteredStations = selectedStation === 'all' 
     ? stations 
@@ -94,7 +102,7 @@ export function StationTableViewGrouped({
         const tankId = `${station.id}-${tank.id}`;
         const selectedTank = selectedTanks[tankId];
         
-        if (selectedTank?.selected) {
+        if (selectedTank?.quantity > 0) {
           totalOrderQuantity += selectedTank.quantity;
         }
         
@@ -119,15 +127,15 @@ export function StationTableViewGrouped({
     let fillCapacity = 0;
     let currentVolume = 0;
     let totalCapacity = 0;
-    let selectedCount = 0;
+    let tanksWithQuantity = 0;
 
     station.tanks.forEach(tank => {
       const tankId = `${station.id}-${tank.id}`;
       const selectedTank = selectedTanks[tankId];
       
-      if (selectedTank?.selected) {
+      if (selectedTank?.quantity > 0) {
         orderQuantity += selectedTank.quantity;
-        selectedCount++;
+        tanksWithQuantity++;
       }
       
       fillCapacity += (tank.capacity - tank.current);
@@ -140,7 +148,7 @@ export function StationTableViewGrouped({
       fillCapacity,
       currentVolume,
       totalCapacity,
-      selectedCount,
+      tanksWithQuantity,
       totalTanks: station.tanks.length
     };
   };
@@ -220,7 +228,7 @@ export function StationTableViewGrouped({
                     </div>
                     <div className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                       <span className="text-slate-600 dark:text-slate-400 text-xs">
-                        {stationTotals.selectedCount}/{stationTotals.totalTanks} selecionados
+                        {stationTotals.tanksWithQuantity}/{stationTotals.totalTanks} com pedido
                       </span>
                     </div>
                   </div>
@@ -232,17 +240,6 @@ export function StationTableViewGrouped({
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-slate-200 dark:border-slate-700">
-                        <TableHead className="w-12">
-                          <input
-                            type="checkbox"
-                            onChange={(e) => {
-                              station.tanks.forEach(tank => {
-                                onTankSelect(station.id, tank.id, e.target.checked);
-                              });
-                            }}
-                            className="w-4 h-4 rounded border-slate-400 dark:border-slate-500 text-emerald-500 focus:ring-emerald-500"
-                          />
-                        </TableHead>
                         <TableHead>Tanque</TableHead>
                         <TableHead>Combustível</TableHead>
                         <TableHead>Status</TableHead>
@@ -257,7 +254,6 @@ export function StationTableViewGrouped({
                       {station.tanks.map(tank => {
                         const tankId = `${station.id}-${tank.id}`;
                         const status = getTankStatus(tank);
-                        const isSelected = selectedTanks[tankId]?.selected || false;
                         const quantity = selectedTanks[tankId]?.quantity || 0;
                         const hasWater = tank.apiData && tank.apiData.QuantidadeDeAgua > 0;
                         const tankNumber = tank.apiData?.Tanque || 0;
@@ -265,19 +261,8 @@ export function StationTableViewGrouped({
                         return (
                           <TableRow 
                             key={tankId}
-                            className={`border-b border-slate-100 dark:border-slate-800 ${
-                              isSelected ? 'bg-emerald-50/50 dark:bg-emerald-900/20' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
-                            }`}
+                            className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
                           >
-                            <TableCell>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => onTankSelect(station.id, tank.id, e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-400 dark:border-slate-500 text-emerald-500 focus:ring-emerald-500"
-                              />
-                            </TableCell>
-                            
                             <TableCell>
                               <span className="font-medium text-slate-900 dark:text-white">
                                 Tanque {tankNumber}
@@ -353,20 +338,16 @@ export function StationTableViewGrouped({
                             </TableCell>
                             
                             <TableCell>
-                              {isSelected ? (
-                                <input
-                                  type="number"
-                                  value={quantity}
-                                  onChange={(e) => onQuantityChange(station.id, tank.id, Number(e.target.value))}
-                                  max={tank.capacity - tank.current}
-                                  min={0}
-                                  step="1000"
-                                  className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                  placeholder="0"
-                                />
-                              ) : (
-                                <span className="text-xs text-slate-400">-</span>
-                              )}
+                              <input
+                                type="number"
+                                value={quantity}
+                                onChange={(e) => handleQuantityChange(station.id, tank.id, Number(e.target.value))}
+                                max={tank.capacity - tank.current}
+                                min={0}
+                                step="1000"
+                                className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                placeholder="0"
+                              />
                             </TableCell>
                             
                             <TableCell>
@@ -450,4 +431,3 @@ export function StationTableViewGrouped({
 }
 
 export default StationTableViewGrouped;
-

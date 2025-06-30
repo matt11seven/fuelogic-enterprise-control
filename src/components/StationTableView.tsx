@@ -90,10 +90,17 @@ export function StationTableView({
       tank,
       tankId: `${station.id}-${tank.id}`,
       status: getTankStatus(tank),
-      isSelected: selectedTanks[`${station.id}-${tank.id}`]?.selected || false,
       quantity: selectedTanks[`${station.id}-${tank.id}`]?.quantity || 0
     }))
   );
+
+  // Função para lidar com mudanças na quantidade
+  const handleQuantityChange = (stationId: string, tankId: string, quantity: number) => {
+    // Automaticamente seleciona o tanque se a quantidade for maior que 0
+    const shouldSelect = quantity > 0;
+    onTankSelect(stationId, tankId, shouldSelect);
+    onQuantityChange(stationId, tankId, quantity);
+  };
 
   return (
     <div className="space-y-4">
@@ -122,18 +129,6 @@ export function StationTableView({
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 dark:border-slate-700">
-                <TableHead className="w-12">
-                  <input
-                    type="checkbox"
-                    onChange={(e) => {
-                      // Selecionar/deselecionar todos
-                      tableData.forEach(({ station, tank }) => {
-                        onTankSelect(station.id, tank.id, e.target.checked);
-                      });
-                    }}
-                    className="w-4 h-4 rounded border-slate-400 dark:border-slate-500 text-emerald-500 focus:ring-emerald-500"
-                  />
-                </TableHead>
                 <TableHead>Posto</TableHead>
                 <TableHead>Tanque</TableHead>
                 <TableHead>Combustível</TableHead>
@@ -146,26 +141,15 @@ export function StationTableView({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tableData.map(({ station, tank, tankId, status, isSelected, quantity }) => {
+              {tableData.map(({ station, tank, tankId, status, quantity }) => {
                 const hasWater = tank.apiData && tank.apiData.QuantidadeDeAgua > 0;
                 const tankNumber = tank.apiData?.Tanque || 0;
                 
                 return (
                   <TableRow 
                     key={tankId}
-                    className={`border-b border-slate-100 dark:border-slate-800 ${
-                      isSelected ? 'bg-emerald-50/50 dark:bg-emerald-900/20' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
-                    }`}
+                    className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
                   >
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => onTankSelect(station.id, tank.id, e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-400 dark:border-slate-500 text-emerald-500 focus:ring-emerald-500"
-                      />
-                    </TableCell>
-                    
                     <TableCell className="font-medium text-slate-900 dark:text-white">
                       <div>
                         <div className="font-semibold">{station.name}</div>
@@ -248,20 +232,16 @@ export function StationTableView({
                     </TableCell>
                     
                     <TableCell>
-                      {isSelected ? (
-                        <input
-                          type="number"
-                          value={quantity}
-                          onChange={(e) => onQuantityChange(station.id, tank.id, Number(e.target.value))}
-                          max={tank.capacity - tank.current}
-                          min={0}
-                          step="1000"
-                          className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                          placeholder="0"
-                        />
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => handleQuantityChange(station.id, tank.id, Number(e.target.value))}
+                        max={tank.capacity - tank.current}
+                        min={0}
+                        step="1000"
+                        className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        placeholder="0"
+                      />
                     </TableCell>
                     
                     <TableCell>
