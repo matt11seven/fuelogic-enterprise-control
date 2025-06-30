@@ -71,50 +71,11 @@ export function StationCard({
     onQuantityChange(id, tankId, quantity);
   };
 
-  // Calcular totais para este posto
-  const calculateTotals = () => {
-    let totalOrderQuantity = 0;
-    let totalFillCapacity = 0;
-
-    tanks.forEach(tank => {
-      const tankId = `${id}-${tank.id}`;
-      const selectedTank = selectedTanks[tankId];
-      
-      if (selectedTank?.quantity > 0) {
-        totalOrderQuantity += selectedTank.quantity;
-      }
-      
-      totalFillCapacity += (tank.capacity - tank.current);
-    });
-
-    return { totalOrderQuantity, totalFillCapacity };
-  };
-
-  const totals = calculateTotals();
-
   return (
     <Card className="glass-card-hover">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg text-white">{name}</CardTitle>
-            <p className="text-sm text-slate-300">{address}</p>
-          </div>
-          
-          {/* Totais do posto */}
-          <div className="flex flex-col items-end space-y-1 text-xs">
-            <div className="bg-blue-100 dark:bg-blue-900/20 px-2 py-1 rounded">
-              <span className="text-blue-700 dark:text-blue-300 font-medium">
-                Pedido: {totals.totalOrderQuantity.toLocaleString()}L
-              </span>
-            </div>
-            <div className="bg-emerald-100 dark:bg-emerald-900/20 px-2 py-1 rounded">
-              <span className="text-emerald-700 dark:text-emerald-300 font-medium">
-                Livre: {totals.totalFillCapacity.toLocaleString()}L
-              </span>
-            </div>
-          </div>
-        </div>
+        <CardTitle className="text-lg text-white">{name}</CardTitle>
+        <p className="text-sm text-slate-300">{address}</p>
       </CardHeader>
       
       <CardContent className="space-y-4">
