@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { Truck, TruckFormData } from '@/types/truck';
 
@@ -99,3 +100,5 @@ export const searchTrucks = async (query: string): Promise<Truck[]> => {
   });
   return response.data;
 };
+
+// Removendo o export default para usar apenas named exports

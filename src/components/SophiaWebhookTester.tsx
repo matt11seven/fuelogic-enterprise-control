@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Card, CardContent, Typography, FormControl, InputLabel, MenuItem, Select, Chip, Alert, CircularProgress, Grid } from '@mui/material';
 import SophiaAPI from '../services/sophia-api';
@@ -75,8 +76,9 @@ const SophiaWebhookTester: React.FC = () => {
     setSuccess({ show: false, message: '' });
 
     try {
-      // Enviar pedidos para o webhook selecionado
-      const response = await SophiaAPI.sendOrdersToWebhook(selectedWebhook, pendingOrders);
+      // Enviar pedidos para o webhook selecionado - corrigido o nome do método
+      const orderIds = pendingOrders.map(order => order.id);
+      const response = await SophiaAPI.sendOrdersToSophia(orderIds, selectedWebhook);
 
       if (response.success) {
         setSuccess({ show: true, message: 'Pedidos enviados com sucesso!' });
@@ -130,7 +132,7 @@ const SophiaWebhookTester: React.FC = () => {
       )}
 
       <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -154,7 +156,7 @@ const SophiaWebhookTester: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -172,7 +174,7 @@ const SophiaWebhookTester: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>

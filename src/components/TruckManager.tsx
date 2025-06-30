@@ -23,7 +23,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { Truck, TruckStatus, TruckFilters } from '../types/truck';
 import TruckCard from './TruckCard';
 import TruckSearch from './trucks/TruckSearch';
-import TruckRegistrationForm from './trucks/TruckRegistrationForm';
+import { TruckRegistrationForm } from './trucks/TruckRegistrationForm';
 import { getAllTrucks, deleteTruck, searchTrucks, createTruck } from '../services/truck-api';
 
 const TruckManager: React.FC = () => {
@@ -235,22 +235,13 @@ const TruckManager: React.FC = () => {
         <DialogTitle>Adicionar Novo Caminhão</DialogTitle>
         <DialogContent>
           <TruckRegistrationForm 
-            onSubmit={async (data) => {
-              try {
-                const newTruck = await createTruck(data);
-                handleAddTruck(newTruck);
-                setOpenDialog(false);
-              } catch (err) {
-                console.error('Erro ao criar caminhão:', err);
-                setError('Não foi possível criar o caminhão. Tente novamente mais tarde.');
-              }
+            onSuccess={async () => {
+              setOpenDialog(false);
+              fetchTrucks();
             }}
             onCancel={() => setOpenDialog(false)}
-            isSubmitting={loading}
-            error={error}
           />
         </DialogContent>
-        {/* Botão de cancelar foi movido para dentro do formulário */}
       </Dialog>
     </Box>
   );

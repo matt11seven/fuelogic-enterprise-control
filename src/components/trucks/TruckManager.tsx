@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Truck, TruckFormData } from "@/types/truck";
 import TruckList from "./TruckList";
-import TruckRegistrationForm from "./TruckRegistrationForm";
+import { TruckRegistrationForm } from "./TruckRegistrationForm";
 import { 
   getAllTrucks, 
   createTruck, 
@@ -229,10 +229,11 @@ const TruckManager = () => {
           
           <TruckRegistrationForm
             truck={selectedTruck}
-            onSubmit={handleFormSubmit}
+            onSuccess={() => {
+              setFormOpen(false);
+              fetchTrucks();
+            }}
             onCancel={() => setFormOpen(false)}
-            isSubmitting={isSubmitting}
-            error={formError}
           />
         </DialogContent>
       </Dialog>
