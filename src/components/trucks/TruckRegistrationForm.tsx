@@ -1,260 +1,165 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Truck, TruckFormData, TruckStatus } from "@/types/truck";
-import { isValidBrazilianLicensePlate } from "@/lib/utils";
-
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Truck } from "@/types/truck";
+import truckApi from "@/services/truck-api";
+import { toast } from "@/hooks/use-toast";
 
-// Schema de validação usando Zod
-const truckFormSchema = z.object({
-  name: z.string().min(3, {
-    message: "Nome deve ter pelo menos 3 caracteres",
-  }),
-  driver_name: z.string().min(3, {
-    message: "Nome do motorista deve ter pelo menos 3 caracteres",
-  }),
-  license_plate: z.string().refine(isValidBrazilianLicensePlate, {
-    message: "Placa inválida. Use o formato AAA-1234 ou AAA1A23",
-  }),
-  capacity: z.number()
-    .min(1000, { message: "Capacidade mínima é 1000L" })
-    .max(100000, { message: "Capacidade máxima é 100000L" }),
-  observations: z.string().optional(),
+const truckSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  driver_name: z.string().min(1, "Nome do motorista é obrigatório"),
+  license_plate: z.string().min(1, "Placa é obrigatória"),
   status: z.enum(["active", "inactive", "maintenance"]),
+  capacity: z.number().min(1, "Capacidade deve ser maior que 0"),
+  observations: z.string().optional(),
 });
+
+type TruckFormData = z.infer<typeof truckSchema>;
 
 interface TruckRegistrationFormProps {
   truck?: Truck;
-  onSubmit: (data: TruckFormData) => Promise<void>;
-  onCancel: () => void;
-  isSubmitting: boolean;
-  error?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-const TruckRegistrationForm = ({
-  truck,
-  onSubmit,
-  onCancel,
-  isSubmitting,
-  error,
-}: TruckRegistrationFormProps) => {
-  const isEditing = !!truck;
-
-  // Inicializar o formulário com os valores padrão ou do caminhão existente
-  const form = useForm<z.infer<typeof truckFormSchema>>({
-    resolver: zodResolver(truckFormSchema),
+export function TruckRegistrationForm({ truck, onSuccess, onCancel }: TruckRegistrationFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<TruckFormData>({
+    resolver: zodResolver(truckSchema),
     defaultValues: {
       name: truck?.name || "",
       driver_name: truck?.driver_name || "",
       license_plate: truck?.license_plate || "",
-      capacity: truck?.capacity || 5000,
+      status: truck?.status || "active",
+      capacity: truck?.capacity || 0,
       observations: truck?.observations || "",
-      status: (truck?.status as TruckStatus) || "active",
     },
   });
 
-  // Atualizar o formulário quando o caminhão mudar
   useEffect(() => {
     if (truck) {
-      form.reset({
+      const truckData: TruckFormData = {
         name: truck.name,
         driver_name: truck.driver_name,
         license_plate: truck.license_plate,
+        status: truck.status,
         capacity: truck.capacity,
         observations: truck.observations || "",
-        status: truck.status,
-      });
+      };
+      form.reset(truckData);
     }
   }, [truck, form]);
 
-  // Função para lidar com o envio do formulário
-  const handleSubmit = async (data: z.infer<typeof truckFormSchema>) => {
-    await onSubmit(data);
+  const onSubmit = async (data: TruckFormData) => {
+    setIsSubmitting(true);
+    try {
+      if (truck) {
+        await truckApi.updateTruck(truck.id, data);
+        toast({
+          title: "Caminhão atualizado",
+          description: "Os dados do caminhão foram atualizados com sucesso.",
+        });
+      } else {
+        await truckApi.createTruck(data);
+        toast({
+          title: "Caminhão cadastrado",
+          description: "O caminhão foi cadastrado com sucesso.",
+        });
+      }
+      onSuccess?.();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar caminhão",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Caminhão</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: Caminhão 01" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Nome identificador do caminhão
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
+    <Card>
+      <CardHeader>
+        <CardTitle>{truck ? "Editar Caminhão" : "Cadastrar Caminhão"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input id="name" type="text" placeholder="Nome do caminhão" {...form.register("name")} />
+              {form.formState.errors.name && (
+                <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="driver_name">Nome do Motorista</Label>
+              <Input id="driver_name" type="text" placeholder="Nome do motorista" {...form.register("driver_name")} />
+              {form.formState.errors.driver_name && (
+                <p className="text-sm text-red-500">{form.formState.errors.driver_name.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="license_plate">Placa</Label>
+              <Input id="license_plate" type="text" placeholder="Placa do caminhão" {...form.register("license_plate")} />
+              {form.formState.errors.license_plate && (
+                <p className="text-sm text-red-500">{form.formState.errors.license_plate.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="capacity">Capacidade (Litros)</Label>
+              <Input
+                id="capacity"
+                type="number"
+                placeholder="Capacidade do caminhão"
+                {...form.register("capacity", { valueAsNumber: true })}
+              />
+              {form.formState.errors.capacity && (
+                <p className="text-sm text-red-500">{form.formState.errors.capacity.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select {...form.register("status")} defaultValue={truck?.status || "active"}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                  <SelectItem value="maintenance">Manutenção</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.formState.errors.status && (
+                <p className="text-sm text-red-500">{form.formState.errors.status.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="observations">Observações</Label>
+              <Textarea id="observations" placeholder="Observações" {...form.register("observations")} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : truck ? "Atualizar" : "Cadastrar"}
+            </Button>
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancelar
+              </Button>
             )}
-          />
-
-          <FormField
-            control={form.control}
-            name="driver_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Motorista Responsável</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome completo do motorista" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Nome do condutor principal
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="license_plate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Placa do Veículo</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="AAA-1234 ou AAA1A23" 
-                    {...field} 
-                    onChange={(e) => {
-                      // Converter para maiúsculas automaticamente
-                      field.onChange(e.target.value.toUpperCase());
-                    }}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Formato brasileiro (AAA-1234 ou AAA1A23)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="capacity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Capacidade (Litros)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="5000" 
-                    {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
-                    value={field.value}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Entre 1.000L e 30.000L
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                    <SelectItem value="maintenance">Em Manutenção</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Estado atual do caminhão
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="observations"
-            render={({ field }) => (
-              <FormItem className="col-span-1 md:col-span-2">
-                <FormLabel>Observações</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Informações adicionais sobre o caminhão..."
-                    className="resize-none"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Detalhes importantes sobre o veículo (opcional)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Salvando..." : isEditing ? "Atualizar" : "Cadastrar"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
-};
-
-export default TruckRegistrationForm;
+}

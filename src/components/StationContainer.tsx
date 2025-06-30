@@ -3,6 +3,7 @@ import { TankData } from "@/types/api";
 import StationCard from "./StationCard";
 import StationListView from "./StationListView";
 import StationTableView from "./StationTableView";
+import StationTableViewGrouped from "./StationTableViewGrouped";
 import ViewToggle from "./ViewToggle";
 import { sendInspectionAlert } from "@/services/inspection-api";
 import { toast } from "@/hooks/use-toast";
@@ -31,7 +32,7 @@ interface StationContainerProps {
 }
 
 export function StationContainer({ stations, onTankSelect, onQuantityChange, selectedTanks }: StationContainerProps) {
-  const [viewMode, setViewMode] = useState<'cards' | 'list' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'list' | 'table' | 'grouped'>('cards');
   
   // Funções para ações rápidas
   const handleRequestFill = (stationId: string, tankId: string) => {
@@ -129,6 +130,16 @@ export function StationContainer({ stations, onTankSelect, onQuantityChange, sel
         </div>
       ) : viewMode === 'list' ? (
         <StationListView
+          stations={stations}
+          onTankSelect={onTankSelect}
+          onQuantityChange={onQuantityChange}
+          selectedTanks={selectedTanks}
+          onRequestFill={handleRequestFill}
+          onMarkInspection={handleMarkInspection}
+          onViewHistory={handleViewHistory}
+        />
+      ) : viewMode === 'grouped' ? (
+        <StationTableViewGrouped
           stations={stations}
           onTankSelect={onTankSelect}
           onQuantityChange={onQuantityChange}

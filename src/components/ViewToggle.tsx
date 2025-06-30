@@ -1,10 +1,11 @@
 
-import { Grid, List, Table } from "lucide-react";
+
+import { Grid, List, Table, Building2 } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface ViewToggleProps {
-  viewMode: 'cards' | 'list' | 'table';
-  onViewChange: (mode: 'cards' | 'list' | 'table') => void;
+  viewMode: 'cards' | 'list' | 'table' | 'grouped';
+  onViewChange: (mode: 'cards' | 'list' | 'table' | 'grouped') => void;
 }
 
 export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
@@ -40,8 +41,19 @@ export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
         <Table className="w-4 h-4 mr-2" />
         <span className="text-xs">Tabela</span>
       </Button>
+      <Button
+        variant={viewMode === 'grouped' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => onViewChange('grouped')}
+        className={`px-3 py-1 h-8 ${viewMode === 'grouped' ? 'bg-slate-700' : 'hover:bg-slate-700/50'}`}
+        title="Visualização agrupada por unidade"
+      >
+        <Building2 className="w-4 h-4 mr-2" />
+        <span className="text-xs">Agrupado</span>
+      </Button>
     </div>
   );
 }
 
 export default ViewToggle;
+
