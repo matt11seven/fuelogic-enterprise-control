@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck } from "@/types/truck";
-import truckApi from "@/services/truck-api";
+import { createTruck, updateTruck } from "@/services/truck-api";
 import { toast } from "@/hooks/use-toast";
 
 const truckSchema = z.object({
@@ -62,13 +63,13 @@ export function TruckRegistrationForm({ truck, onSuccess, onCancel }: TruckRegis
     setIsSubmitting(true);
     try {
       if (truck) {
-        await truckApi.updateTruck(truck.id, data);
+        await updateTruck(truck.id, data);
         toast({
           title: "Caminhão atualizado",
           description: "Os dados do caminhão foram atualizados com sucesso.",
         });
       } else {
-        await truckApi.createTruck(data);
+        await createTruck(data);
         toast({
           title: "Caminhão cadastrado",
           description: "O caminhão foi cadastrado com sucesso.",

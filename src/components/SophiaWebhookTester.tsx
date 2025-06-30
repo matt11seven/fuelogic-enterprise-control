@@ -132,7 +132,7 @@ const SophiaWebhookTester: React.FC = () => {
       )}
 
       <Grid container spacing={3}>
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -156,7 +156,7 @@ const SophiaWebhookTester: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -174,7 +174,7 @@ const SophiaWebhookTester: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
