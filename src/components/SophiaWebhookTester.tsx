@@ -1,15 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Card, CardContent, Typography, FormControl, InputLabel, MenuItem, Select, Chip, Alert, CircularProgress, Grid } from '@mui/material';
 import SophiaAPI from '../services/sophia-api';
-import webhookApi from '../services/webhook-api';
+import webhookApi, { Webhook } from '../services/webhook-api';
 import orderApi from '../services/order-api';
-
-interface Webhook {
-  id: number;
-  name: string;
-  url: string;
-  integration_type: string;
-}
 
 interface Order {
   id: number;
@@ -43,14 +37,14 @@ const SophiaWebhookTester: React.FC = () => {
         // Buscar webhooks
         const webhooksResponse = await webhookApi.getAllWebhooks();
         const sophiaWebhooks = webhooksResponse.filter(webhook => 
-          webhook.integration_type === 'sophia_ai' || 
+          webhook.integration === 'sophia_ai' || 
           webhook.name.toLowerCase().includes('sophia')
         );
         setWebhooks(sophiaWebhooks);
 
         // Buscar pedidos pendentes
         const ordersResponse = await orderApi.getOrders({ status: 'pending' });
-        setPendingOrders(ordersResponse.orders || []);
+        setPendingOrders(Array.isArray(ordersResponse) ? ordersResponse : []);
         setLoading(false);
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
@@ -63,7 +57,7 @@ const SophiaWebhookTester: React.FC = () => {
   }, []);
 
   // Funções de manipulação
-  const handleWebhookChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleWebhookChange = (event: any) => {
     setSelectedWebhook(event.target.value as number);
   };
 
@@ -104,7 +98,7 @@ const SophiaWebhookTester: React.FC = () => {
         message: `${response.message} Detalhes: ${response.details?.pedidos || 0} pedidos de ${response.details?.empresas || 0} empresas processados.`
       });
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao enviar pedidos para Sophia:', err);
       setError(err.message || 'Falha ao enviar pedidos para IA Sophia.');
       setLoading(false);
@@ -130,7 +124,7 @@ const SophiaWebhookTester: React.FC = () => {
         message: response.message
       });
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao processar pedidos pendentes:', err);
       setError(err.message || 'Falha ao processar pedidos pendentes.');
       setLoading(false);

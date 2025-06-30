@@ -1,3 +1,4 @@
+
 import { AlertTriangle, TrendingUp, CheckCircle, Droplet } from "lucide-react";
 import { Station } from "@/hooks/use-tank-data";
 import { useConfig } from "@/context/ConfigContext";
@@ -28,8 +29,6 @@ interface TanqueAgua {
   waterAmount: number;
   capacity: number;
   current: number;
-  days_since_inspection?: number;
-  last_inspection?: string;
 }
 
 const MetricCard = ({ title, value, icon: Icon, color, bgGradient, borderColor, glowClass, onClick }: MetricCardProps) => (
@@ -86,9 +85,7 @@ const MetricsCards = ({ stations = [] }: MetricsCardsProps) => {
           product: tank.product,
           waterAmount: tank.waterAmount,
           capacity: tank.capacity,
-          current: tank.current,
-          last_inspection: tank.lastInspection,
-          days_since_inspection: tank.daysSinceInspection
+          current: tank.current
         });
       } else if (percentage < thresholds.threshold_critico) {
         // Tanques abaixo do threshold crítico
