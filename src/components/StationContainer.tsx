@@ -2,6 +2,7 @@ import { useState } from "react";
 import { TankData } from "@/types/api";
 import StationCard from "./StationCard";
 import StationListView from "./StationListView";
+import StationTableView from "./StationTableView";
 import ViewToggle from "./ViewToggle";
 import { sendInspectionAlert } from "@/services/inspection-api";
 import { toast } from "@/hooks/use-toast";
@@ -30,7 +31,7 @@ interface StationContainerProps {
 }
 
 export function StationContainer({ stations, onTankSelect, onQuantityChange, selectedTanks }: StationContainerProps) {
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'list' | 'table'>('cards');
   
   // Funções para ações rápidas
   const handleRequestFill = (stationId: string, tankId: string) => {
@@ -110,7 +111,7 @@ export function StationContainer({ stations, onTankSelect, onQuantityChange, sel
         <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
       </div>
 
-      {/* Visualização em cards ou lista */}
+      {/* Visualização em cards, lista ou tabela */}
       {viewMode === 'cards' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stations.map(station => (
@@ -126,8 +127,18 @@ export function StationContainer({ stations, onTankSelect, onQuantityChange, sel
             />
           ))}
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <StationListView
+          stations={stations}
+          onTankSelect={onTankSelect}
+          onQuantityChange={onQuantityChange}
+          selectedTanks={selectedTanks}
+          onRequestFill={handleRequestFill}
+          onMarkInspection={handleMarkInspection}
+          onViewHistory={handleViewHistory}
+        />
+      ) : (
+        <StationTableView
           stations={stations}
           onTankSelect={onTankSelect}
           onQuantityChange={onQuantityChange}

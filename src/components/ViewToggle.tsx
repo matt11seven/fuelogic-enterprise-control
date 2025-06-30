@@ -1,9 +1,10 @@
-import { Grid, List } from "lucide-react";
+
+import { Grid, List, Table } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface ViewToggleProps {
-  viewMode: 'cards' | 'list';
-  onViewChange: (mode: 'cards' | 'list') => void;
+  viewMode: 'cards' | 'list' | 'table';
+  onViewChange: (mode: 'cards' | 'list' | 'table') => void;
 }
 
 export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
@@ -28,6 +29,16 @@ export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
       >
         <List className="w-4 h-4 mr-2" />
         <span className="text-xs">Lista</span>
+      </Button>
+      <Button
+        variant={viewMode === 'table' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => onViewChange('table')}
+        className={`px-3 py-1 h-8 ${viewMode === 'table' ? 'bg-slate-700' : 'hover:bg-slate-700/50'}`}
+        title="Visualização em tabela"
+      >
+        <Table className="w-4 h-4 mr-2" />
+        <span className="text-xs">Tabela</span>
       </Button>
     </div>
   );
