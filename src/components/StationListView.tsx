@@ -119,24 +119,30 @@ export function StationListView({
     if (percentage < thresholds.threshold_atencao) return { color: 'amber', label: 'Atenção', percentage };
     return { color: 'emerald', label: 'Operacional', percentage };
   };
-  
-  // Função para formatar a quantidade de água em litros
-  // Usa o valor direto do JSON, que já vem em litros
+
+  const getCodeColor = (code: string) => {
+    // Verificar o código completo para diferenciar S10 e S10A
+    if (code === 'S10') return 'bg-yellow-500';     // Diesel S10 - Amarelo
+    if (code === 'S10A') return 'bg-orange-500';    // Diesel S10 Aditivado - Laranja
+    
+    const prefix = code.substring(0, 2).toUpperCase();
+    
+    switch (prefix) {
+      case 'GC': return 'bg-red-500';        // Gasolina Comum - Vermelho
+      case 'GA': return 'bg-blue-500';       // Gasolina Aditivada - Azul  
+      case 'GP': return 'bg-purple-500';     // Gasolina Podium - Roxo
+      case 'DS': return 'bg-amber-600';      // Diesel Comum - Âmbar
+      case 'ET': return 'bg-green-500';      // Etanol - Verde
+      case 'AR': return 'bg-cyan-500';       // Arla - Ciano
+      default: return 'bg-slate-500';
+    }
+  };
+
   const formatWaterAmount = (waterAmount: number) => {
     return waterAmount.toLocaleString(undefined, {maximumFractionDigits: 1});
   };
 
-  const getCodeColor = (code: string) => {
-    switch (code) {
-      case 'GC': return 'bg-red-500';        // Gasolina Comum - Vermelho
-      case 'GA': return 'bg-blue-500';       // Gasolina Aditivada - Azul  
-      case 'ET': return 'bg-green-500';      // Etanol - Verde
-      case 'DS': return 'bg-yellow-500';     // Diesel S10 - Amarelo
-      case 'DP': return 'bg-orange-500';     // Diesel Premium - Laranja
-      case 'AD': return 'bg-purple-500';     // Arla/AdBlue - Roxo
-      default: return 'bg-gray-500';         // Outros - Cinza
-    }
-  };
+  // Função getCodeColor já definida acima
 
   const filteredStations = stations.filter(station => {
     // Filtro por nome da estação
@@ -193,6 +199,45 @@ export function StationListView({
   return (
     <div className="space-y-4">
       {/* Filtros */}
+      {/* Legenda de tipos de combustível */}
+      <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-2 bg-slate-50/80 dark:bg-slate-800/30 p-2 rounded-lg shadow-sm">
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Tipos de combustível:</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">GC - Gasolina Comum</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">GA - Gasolina Aditivada</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">GP - Gasolina Podium</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">S10 - Diesel S10</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">S10A - Diesel S10 Aditivado</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-amber-600"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">DS - Diesel Comum</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">ET - Etanol</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
+            <span className="text-xs text-slate-600 dark:text-slate-400">AR - Arla</span>
+          </div>
+        </div>
+      </div>
+      
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-grow max-w-md">
           <input
@@ -335,7 +380,43 @@ export function StationListView({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center space-x-3 flex-grow">
+                    <div className="flex flex-wrap items-center justify-center gap-2 py-1 w-full">
+                      {/* Mini indicadores visuais dos tanques */}
+                      {station.tanks.map(tank => {
+                        const tankStatus = getTankStatus(tank);
+                        const hasWater = tank.apiData && tank.apiData.QuantidadeDeAgua > 0;
+                        return (
+                          <div 
+                            key={tank.id} 
+                            className="relative group flex-shrink-0"
+                            title={`${tank.code} - ${tankStatus.label} - ${Math.round(tankStatus.percentage)}%${hasWater ? ` - ${formatWaterAmount(tank.apiData?.QuantidadeDeAgua || 0)}L de água` : ''}`}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className="relative flex items-center justify-center">
+                                <div 
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold text-white ${getCodeColor(tank.code)}`}
+                                >
+                                  {tank.code}
+                                </div>
+                                <div 
+                                  className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${hasWater ? 'bg-blue-500' : 
+                                    tankStatus.percentage < thresholds.threshold_critico ? 'bg-red-500' : 
+                                    tankStatus.percentage < thresholds.threshold_atencao ? 'bg-amber-500' : 
+                                    'bg-emerald-500'} text-white text-[10px] rounded-md px-1.5 py-0.5 flex items-center justify-center font-bold border-2 border-white dark:border-white shadow-sm`}
+                                >
+                                  {Math.round(tankStatus.percentage)}%
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap transition-opacity duration-200 z-10">
+                              {tank.code} - {Math.round(tankStatus.percentage)}%
+                              {hasWater && <div className="text-blue-300">{formatWaterAmount(tank.apiData?.QuantidadeDeAgua || 0)}L água</div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                     <StatusIndicators tanks={station.tanks} compact={true} />
                     <span className="text-sm text-slate-600 dark:text-slate-400">{station.tanks.length} tanques</span>
                   </div>
