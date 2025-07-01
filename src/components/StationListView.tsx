@@ -147,7 +147,7 @@ export function StationListView({
   const filteredStations = stations.filter(station => {
     // Filtro por nome da estação
     if (searchTerm && !station.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !station.address.toLowerCase().includes(searchTerm.toLowerCase())) {
+        !station.address?.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
 
@@ -196,8 +196,96 @@ export function StationListView({
     return true;
   });
 
+  // Calcular totais apenas para os postos filtrados
+  const calculateTotals = () => {
+    let totalOrderQuantity = 0;
+    let totalFillCapacity = 0;
+    let totalCapacity = 0;
+    let totalCurrent = 0;
+
+    filteredStations.forEach(station => {
+      station.tanks.forEach(tank => {
+        const tankId = `${station.id}-${tank.id}`;
+        const selectedTank = selectedTanks[tankId];
+        
+        if (selectedTank?.selected && selectedTank?.quantity > 0) {
+          totalOrderQuantity += selectedTank.quantity;
+        }
+        
+        totalFillCapacity += (tank.capacity - tank.current);
+        totalCapacity += tank.capacity;
+        totalCurrent += tank.current;
+      });
+    });
+
+    const occupancyPercentage = totalCapacity > 0 ? (totalCurrent / totalCapacity) * 100 : 0;
+    
+    // Calcular a ocupação projetada após o pedido
+    const projectedCurrent = totalCurrent + totalOrderQuantity;
+    const projectedOccupancyPercentage = totalCapacity > 0 ? (projectedCurrent / totalCapacity) * 100 : 0;
+
+    return { 
+      totalOrderQuantity, 
+      totalFillCapacity, 
+      totalCapacity,
+      totalCurrent,
+      occupancyPercentage,
+      projectedCurrent,
+      projectedOccupancyPercentage
+    };
+  };
+
+  const totals = calculateTotals();
+
   return (
     <div className="space-y-4">
+      {/* Totalizadores */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="bg-blue-100/80 dark:bg-blue-900/20 p-3 rounded-lg shadow-sm">
+          <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Pedido Total</div>
+          <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+            {totals.totalOrderQuantity.toLocaleString()} L
+          </div>
+        </div>
+        <div className="bg-emerald-100/80 dark:bg-emerald-900/20 p-3 rounded-lg shadow-sm">
+          <div className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">Capacidade Livre</div>
+          <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
+            {totals.totalFillCapacity.toLocaleString()} L
+          </div>
+        </div>
+        <div className="bg-amber-100/80 dark:bg-amber-900/20 p-3 rounded-lg shadow-sm">
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-sm text-amber-600 dark:text-amber-400">Ocupação</div>
+            {totals.totalOrderQuantity > 0 && (
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center">
+                <span className="mr-1">Após pedido:</span>
+                <span className="font-bold">{Math.round(totals.projectedOccupancyPercentage)}%</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center">
+            <div className="text-xl font-bold text-amber-700 dark:text-amber-300 mr-2 min-w-[3rem]">
+              {Math.round(totals.occupancyPercentage)}%
+            </div>
+            <div className="flex-1 h-3 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden relative">
+              <div 
+                className="h-full bg-amber-500 dark:bg-amber-500 transition-all duration-300"
+                style={{ width: `${Math.min(totals.occupancyPercentage, 100)}%` }}
+              />
+              {totals.totalOrderQuantity > 0 && (
+                <div 
+                  className="h-full bg-blue-500 dark:bg-blue-500 opacity-70 transition-all duration-300 absolute top-0"
+                  style={{ 
+                    width: `${Math.min(totals.projectedOccupancyPercentage - totals.occupancyPercentage, 100)}%`, 
+                    left: `${Math.min(totals.occupancyPercentage, 100)}%`
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filtros */}
       {/* Legenda de tipos de combustível */}
       <div className="flex flex-wrap gap-2 mb-2">

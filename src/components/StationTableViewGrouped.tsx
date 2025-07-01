@@ -111,13 +111,24 @@ export function StationTableViewGrouped({
       });
     });
 
+    const totalCapacity = filteredStations.reduce((acc, station) => 
+      acc + station.tanks.reduce((tankAcc, tank) => tankAcc + tank.capacity, 0), 0
+    );
+    
+    const occupancyPercentage = totalCapacity > 0 ? (totalCurrentVolume / totalCapacity) * 100 : 0;
+    
+    // Calcular a ocupação projetada após o pedido
+    const projectedCurrentVolume = totalCurrentVolume + totalOrderQuantity;
+    const projectedOccupancyPercentage = totalCapacity > 0 ? (projectedCurrentVolume / totalCapacity) * 100 : 0;
+
     return {
       totalOrderQuantity,
       totalFillCapacity,
       totalCurrentVolume,
-      totalCapacity: filteredStations.reduce((acc, station) => 
-        acc + station.tanks.reduce((tankAcc, tank) => tankAcc + tank.capacity, 0), 0
-      )
+      totalCapacity,
+      occupancyPercentage,
+      projectedCurrentVolume,
+      projectedOccupancyPercentage
     };
   };
 
@@ -189,10 +200,32 @@ export function StationTableViewGrouped({
               Capacidade Livre: {totals.totalFillCapacity.toLocaleString()}L
             </span>
           </div>
-          <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg">
-            <span className="text-slate-700 dark:text-slate-300 font-medium">
-              Ocupação: {Math.round((totals.totalCurrentVolume / totals.totalCapacity) * 100)}%
-            </span>
+          <div className="bg-amber-100/80 dark:bg-amber-900/20 px-3 py-2 rounded-lg relative">
+            <div className="flex justify-between items-center">
+              <span className="text-amber-700 dark:text-amber-300 font-medium">
+                Ocupação: {Math.round(totals.occupancyPercentage)}%
+              </span>
+              {totals.totalOrderQuantity > 0 && (
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 ml-2">
+                  Após pedido: {Math.round(totals.projectedOccupancyPercentage)}%
+                </span>
+              )}
+            </div>
+            <div className="mt-1 h-2 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden relative">
+              <div 
+                className="h-full bg-amber-500 dark:bg-amber-500 transition-all duration-300"
+                style={{ width: `${Math.min(totals.occupancyPercentage, 100)}%` }}
+              />
+              {totals.totalOrderQuantity > 0 && (
+                <div 
+                  className="h-full bg-blue-500 dark:bg-blue-500 opacity-70 transition-all duration-300 absolute top-0"
+                  style={{ 
+                    width: `${Math.min(totals.projectedOccupancyPercentage - totals.occupancyPercentage, 100)}%`, 
+                    left: `${Math.min(totals.occupancyPercentage, 100)}%`
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
