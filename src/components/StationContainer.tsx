@@ -41,7 +41,7 @@ export function StationContainer({ stations, onTankSelect, onQuantityChange, sel
     // Aqui você pode abrir um modal ou redirecionar para uma página de pedido
     // Por enquanto, vamos apenas selecionar o tanque e definir uma quantidade padrão
     onTankSelect(stationId, tankId, true);
-    onQuantityChange(stationId, tankId, 1000); // 1000L como quantidade padrão
+    onQuantityChange(stationId, tankId, 5000); // 5000L como quantidade padrão
   };
   
   const handleMarkInspection = async (stationId: string, tankId: string) => {
