@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { getFuelColor } from "../utils/fuelColors";
+import { getProductCode } from "../utils/fuelCodes";
 import { TankData } from "@/types/api";
 import { Badge } from "./ui/badge";
 import { useConfig } from "@/context/ConfigContext";
@@ -50,22 +52,7 @@ export function StationTableViewGrouped({
   const { thresholds } = useConfig();
   const [selectedStation, setSelectedStation] = useState<string>('all');
 
-  const getCodeColor = (code: string) => {
-    if (code === 'S10') return 'bg-yellow-500';
-    if (code === 'S10A') return 'bg-orange-500';
-    
-    const prefix = code.substring(0, 2).toUpperCase();
-    
-    switch (prefix) {
-      case 'GC': return 'bg-red-500';
-      case 'GA': return 'bg-blue-500';
-      case 'GP': return 'bg-purple-500';
-      case 'DS': return 'bg-amber-600';
-      case 'ET': return 'bg-green-500';
-      case 'AR': return 'bg-cyan-500';
-      default: return 'bg-slate-500';
-    }
-  };
+  // Usar o utilitário centralizado para cores de combustível
 
   const getTankStatus = (tank: Tank) => {
     const percentage = (tank.current / tank.capacity) * 100;
@@ -359,7 +346,6 @@ export function StationTableViewGrouped({
                         <TableHead>Venda Prevista</TableHead>
                         <TableHead>Recebimento</TableHead>
                         <TableHead>Total Final</TableHead>
-                        <TableHead>Água</TableHead>
                         <TableHead>Quantidade (L)</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
@@ -384,7 +370,7 @@ export function StationTableViewGrouped({
                             </TableCell>
                             
                             <TableCell>
-                              <Badge className={`${getCodeColor(tank.code)} text-white`}>
+                              <Badge className={`${getFuelColor(getProductCode(tank.code))} text-white`}>
                                 {tank.code}
                               </Badge>
                             </TableCell>
@@ -456,18 +442,7 @@ export function StationTableViewGrouped({
                               </div>
                             </TableCell>
                             
-                            <TableCell>
-                              {hasWater ? (
-                                <div className="flex items-center space-x-1 text-blue-600 dark:text-blue-400">
-                                  <Droplet className="w-3 h-3" />
-                                  <span className="text-xs font-medium">
-                                    {formatWaterAmount(tank.apiData?.QuantidadeDeAgua || 0)}L
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-slate-400">-</span>
-                              )}
-                            </TableCell>
+
                             
                             <TableCell>
                               <input

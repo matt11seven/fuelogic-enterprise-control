@@ -1,5 +1,6 @@
-
 import { useState } from "react";
+import { getFuelColor } from '../utils/fuelColors';
+import { getProductCode } from '../utils/fuelCodes';
 import { useConfig } from "@/context/ConfigContext";
 
 interface FuelTankProps {
@@ -32,18 +33,7 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
 
   const status = getStatus();
   
-  const getCodeColor = () => {
-    switch (code) {
-    case 'GC': return 'bg-red-500';        // Gasolina Comum - Vermelho
-    case 'GA': return 'bg-blue-500';       // Gasolina Aditivada - Azul  
-    case 'GP': return 'bg-purple-500';     // Gasolina Podium - Roxo
-    case 'S10': return 'bg-yellow-500';    // Diesel S10 - Amarelo
-    case 'S10A': return 'bg-orange-500';   // Diesel S10 Aditivado - Laranja
-    case 'DS': return 'bg-amber-600';      // Diesel Comum - Âmbar
-    case 'ET': return 'bg-green-500';      // Etanol - Verde
-    default: return 'bg-slate-500';
-    }
-  };
+  // Usar o utilitário centralizado para cores de combustível
 
   const getProgressColor = () => {
     switch (status.color) {
@@ -98,7 +88,7 @@ const FuelTank = ({ code, type, current, capacity, isSelected, onSelect, quantit
               onChange={(e) => onSelect(e.target.checked)}
               className="w-4 h-4 text-emerald-600 bg-slate-800 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
             />
-            <div className={`hex-badge ${getCodeColor()} text-white font-bold`}>
+            <div className={`hex-badge ${getFuelColor(getProductCode(code))} text-white font-bold`}>
               {code}
             </div>
             <div>

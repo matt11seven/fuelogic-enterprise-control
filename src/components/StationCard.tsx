@@ -1,5 +1,6 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { getFuelColor } from "../utils/fuelColors";
+import { getProductCode } from "../utils/fuelCodes";
 import { MapPin, ArrowUpDown } from "lucide-react";
 import FuelTank from "./FuelTank";
 import TankDetails from "./TankDetails";
@@ -115,18 +116,7 @@ const StationCard = ({
       return 'bg-emerald-500';
     };
 
-    const getCodeColor = () => {
-      switch (tank.code) {
-        case 'GC': return 'bg-red-500';        // Gasolina Comum - Vermelho
-        case 'GA': return 'bg-blue-500';       // Gasolina Aditivada - Azul  
-        case 'GP': return 'bg-purple-500';     // Gasolina Podium - Roxo
-        case 'S10': return 'bg-yellow-500';    // Diesel S10 - Amarelo
-        case 'S10A': return 'bg-orange-500';   // Diesel S10 Aditivado - Laranja
-        case 'DS': return 'bg-amber-600';      // Diesel Comum - Âmbar
-        case 'ET': return 'bg-green-500';      // Etanol - Verde
-        default: return 'bg-slate-500';
-      }
-    };
+    const getCodeColor = getFuelColor(getProductCode(tank.code));
 
     const isExpanded = expandedTankId === tank.id;
     const tankNumber = tank.apiData?.Tanque || 0;
@@ -139,7 +129,7 @@ const StationCard = ({
         aria-expanded={isExpanded}
         title={`Tanque ${tankNumber} - ${tank.type} - Clique para ${isExpanded ? 'fechar' : 'ver'} detalhes`}
       >
-        <div className={`hex-badge ${getCodeColor()} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative w-7 h-7 sm:w-8 sm:h-8`}>
+        <div className={`hex-badge ${getCodeColor} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative w-7 h-7 sm:w-8 sm:h-8`}>
           <span className="text-xs sm:text-sm">{tank.code}</span>
           {hasWater && (
             <div 

@@ -1,15 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Filter, MapPin, Search, X, ChevronsDown, ChevronsUp } from "lucide-react";
-import { TankData } from "@/types/api";
-import { Badge } from "./ui/badge";
+import { Droplet, Truck, AlertTriangle } from 'lucide-react';
+import { getFuelColor } from '../utils/fuelColors';
+import { getProductCode } from '../utils/fuelCodes';
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import QuickActions from "./QuickActions";
 import StatusIndicators from "./StatusIndicators";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import OccupancyBar from "./OccupancyBar";
 import { useMockData } from '@/context/MockDataContext';
+import { TankData, StationData } from '@/types/api';
 
+// Definir interfaces adaptadas para o componente
 interface Tank {
   id: string;
   code: string;
@@ -123,29 +127,13 @@ export function StationListView({
     return { color: 'emerald', label: 'Operacional', percentage };
   };
 
-  const getCodeColor = (code: string) => {
-    // Verificar o código completo para diferenciar S10 e S10A
-    if (code === 'S10') return 'bg-yellow-500';     // Diesel S10 - Amarelo
-    if (code === 'S10A') return 'bg-orange-500';    // Diesel S10 Aditivado - Laranja
-    
-    const prefix = code.substring(0, 2).toUpperCase();
-    
-    switch (prefix) {
-      case 'GC': return 'bg-red-500';        // Gasolina Comum - Vermelho
-      case 'GA': return 'bg-blue-500';       // Gasolina Aditivada - Azul  
-      case 'GP': return 'bg-purple-500';     // Gasolina Podium - Roxo
-      case 'DS': return 'bg-amber-600';      // Diesel Comum - Âmbar
-      case 'ET': return 'bg-green-500';      // Etanol - Verde
-      case 'AR': return 'bg-cyan-500';       // Arla - Ciano
-      default: return 'bg-slate-500';
-    }
-  };
+  // Usar o utilitário centralizado para cores de combustível
 
   const formatWaterAmount = (waterAmount: number) => {
     return waterAmount.toLocaleString(undefined, {maximumFractionDigits: 1});
   };
 
-  // Função getCodeColor já definida acima
+  // Usar o utilitário centralizado para cores de combustível importado de '../utils/fuelColors'
 
   // Usar o contexto para obter dados mock estáveis
   const { getMockDataForTank, generateMockDataForStations } = useMockData();
@@ -521,7 +509,7 @@ export function StationListView({
                             <div className="flex flex-col items-center">
                               <div className="relative flex items-center justify-center">
                                 <div 
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold text-white ${getCodeColor(tank.code)}`}
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold text-white ${getFuelColor(getProductCode(tank.code))}`}
                                 >
                                   {tank.code}
                                 </div>
@@ -580,7 +568,7 @@ export function StationListView({
                                       className="w-5 h-5 rounded border-slate-400 dark:border-slate-500 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-white dark:focus:ring-offset-slate-800 transition-colors"
                                     />
                                   </div>
-                                  <Badge className={`${getCodeColor(tank.code)} text-white shadow-sm`}>{tank.code}</Badge>
+                                  <Badge className={`${getFuelColor(getProductCode(tank.code))} text-white shadow-sm`}>{tank.code}</Badge>
                                   <span className="text-slate-800 dark:text-white font-medium">Tanque {tankNumber}</span>
                                   <span className="text-sm text-slate-600 dark:text-slate-400">{tank.type}</span>
                                 </div>
