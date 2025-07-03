@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Filter, MapPin, Search, X, ChevronsDown, ChevronsUp } from "lucide-react";
 import { TankData } from "@/types/api";
 import { Badge } from "./ui/badge";
@@ -8,6 +7,8 @@ import { Button } from "./ui/button";
 import QuickActions from "./QuickActions";
 import StatusIndicators from "./StatusIndicators";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import OccupancyBar from "./OccupancyBar";
+import { useMockData } from '@/context/MockDataContext';
 
 interface Tank {
   id: string;
@@ -16,6 +17,8 @@ interface Tank {
   current: number;
   capacity: number;
   apiData?: TankData;
+  expectedSales?: number; // Venda prevista (mock)
+  expectedDelivery?: number; // Recebimento previsto (mock)
 }
 
 interface Station {
@@ -144,7 +147,29 @@ export function StationListView({
 
   // Função getCodeColor já definida acima
 
-  const filteredStations = stations.filter(station => {
+  // Usar o contexto para obter dados mock estáveis
+  const { getMockDataForTank, generateMockDataForStations } = useMockData();
+  
+  // Gerar dados mock para todas as estações ao montar o componente
+  useEffect(() => {
+    generateMockDataForStations(stations);
+  }, [stations, generateMockDataForStations]);
+  
+  // Aplicar dados mock às estações
+  const stationsWithMockData = stations.map(station => ({
+    ...station,
+    tanks: station.tanks.map(tank => {
+      const mockData = getMockDataForTank(station.id, tank.id);
+      return {
+        ...tank,
+        expectedSales: mockData.expectedSales,
+        expectedDelivery: mockData.expectedDelivery
+      };
+    })
+  }));
+  
+  // Filtrar estações com base nos filtros
+  const filteredStations = stationsWithMockData.filter(station => {
     // Filtro por nome da estação
     if (searchTerm && !station.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
         !station.address?.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -202,6 +227,8 @@ export function StationListView({
     let totalFillCapacity = 0;
     let totalCapacity = 0;
     let totalCurrent = 0;
+    let totalExpectedSales = 0;
+    let totalExpectedDelivery = 0;
 
     filteredStations.forEach(station => {
       station.tanks.forEach(tank => {
@@ -215,14 +242,21 @@ export function StationListView({
         totalFillCapacity += (tank.capacity - tank.current);
         totalCapacity += tank.capacity;
         totalCurrent += tank.current;
+        totalExpectedSales += tank.expectedSales || 0;
+        totalExpectedDelivery += tank.expectedDelivery || 0;
       });
     });
-
+    
+    // Ocupação atual (Volume atual / Capacidade total)
     const occupancyPercentage = totalCapacity > 0 ? (totalCurrent / totalCapacity) * 100 : 0;
     
-    // Calcular a ocupação projetada após o pedido
-    const projectedCurrent = totalCurrent + totalOrderQuantity;
-    const projectedOccupancyPercentage = totalCapacity > 0 ? (projectedCurrent / totalCapacity) * 100 : 0;
+    // Após recebimento (Volume atual + Recebimento previsto / Capacidade total)
+    const volumeAfterDelivery = totalCurrent + totalExpectedDelivery;
+    const occupancyAfterDeliveryPercentage = totalCapacity > 0 ? (volumeAfterDelivery / totalCapacity) * 100 : 0;
+    
+    // Projeção final (Volume após recebimento + Pedido / Capacidade total)
+    const projectedWithSalesAndDelivery = volumeAfterDelivery + totalOrderQuantity;
+    const finalOccupancyPercentage = totalCapacity > 0 ? (projectedWithSalesAndDelivery / totalCapacity) * 100 : 0;
 
     return { 
       totalOrderQuantity, 
@@ -230,8 +264,12 @@ export function StationListView({
       totalCapacity,
       totalCurrent,
       occupancyPercentage,
-      projectedCurrent,
-      projectedOccupancyPercentage
+      volumeAfterDelivery,
+      occupancyAfterDeliveryPercentage,
+      totalExpectedSales,
+      totalExpectedDelivery,
+      projectedWithSalesAndDelivery,
+      finalOccupancyPercentage
     };
   };
 
@@ -240,7 +278,7 @@ export function StationListView({
   return (
     <div className="space-y-4">
       {/* Totalizadores */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
         <div className="bg-blue-100/80 dark:bg-blue-900/20 p-3 rounded-lg shadow-sm">
           <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Pedido Total</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
@@ -253,36 +291,36 @@ export function StationListView({
             {totals.totalFillCapacity.toLocaleString()} L
           </div>
         </div>
+        
+        <div className="bg-purple-100/80 dark:bg-purple-900/20 p-3 rounded-lg shadow-sm">
+          <div className="text-sm text-purple-600 dark:text-purple-400 mb-1">Venda Prevista</div>
+          <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+            {totals.totalExpectedSales.toLocaleString()} L
+          </div>
+        </div>
+        
+        <div className="bg-indigo-100/80 dark:bg-indigo-900/20 p-3 rounded-lg shadow-sm">
+          <div className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Recebimento Previsto</div>
+          <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
+            {totals.totalExpectedDelivery.toLocaleString()} L
+          </div>
+        </div>
         <div className="bg-amber-100/80 dark:bg-amber-900/20 p-3 rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-1">
             <div className="text-sm text-amber-600 dark:text-amber-400">Ocupação</div>
-            {totals.totalOrderQuantity > 0 && (
-              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center">
-                <span className="mr-1">Após pedido:</span>
-                <span className="font-bold">{Math.round(totals.projectedOccupancyPercentage)}%</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center">
-            <div className="text-xl font-bold text-amber-700 dark:text-amber-300 mr-2 min-w-[3rem]">
+            <div className="text-xl font-bold text-amber-700 dark:text-amber-300">
               {Math.round(totals.occupancyPercentage)}%
             </div>
-            <div className="flex-1 h-3 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden relative">
-              <div 
-                className="h-full bg-amber-500 dark:bg-amber-500 transition-all duration-300"
-                style={{ width: `${Math.min(totals.occupancyPercentage, 100)}%` }}
-              />
-              {totals.totalOrderQuantity > 0 && (
-                <div 
-                  className="h-full bg-blue-500 dark:bg-blue-500 opacity-70 transition-all duration-300 absolute top-0"
-                  style={{ 
-                    width: `${Math.min(totals.projectedOccupancyPercentage - totals.occupancyPercentage, 100)}%`, 
-                    left: `${Math.min(totals.occupancyPercentage, 100)}%`
-                  }}
-                />
-              )}
-            </div>
           </div>
+          
+          {/* Componente de barra de ocupação */}
+          <OccupancyBar
+            currentOccupancy={totals.occupancyPercentage}
+            afterDeliveryOccupancy={totals.occupancyAfterDeliveryPercentage}
+            finalProjectionOccupancy={totals.finalOccupancyPercentage}
+            height="h-3"
+            legendClassName="text-xs"
+          />
         </div>
       </div>
 
@@ -612,20 +650,41 @@ export function StationListView({
                             
                             {/* Campo de quantidade para pedido (quando selecionado) */}
                             {isSelected && (
-                              <div className="mt-3 animate-fade-in">
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                  Quantidade para Pedido (L)
-                                </label>
-                                <input
-                                  type="number"
-                                  value={quantity}
-                                  onChange={(e) => onQuantityChange(station.id, tank.id, Number(e.target.value))}
-                                  max={tank.capacity - tank.current}
-                                  min={0}
-                                  step="5000"
-                                  className="form-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                                  placeholder="Digite a quantidade"
-                                />
+                              <div className="grid grid-cols-4 gap-2 mt-2">
+                                <div>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400">Atual/Capacidade</div>
+                                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                                    {tank.current.toLocaleString()}/{tank.capacity.toLocaleString()} L
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400">Quantidade</div>
+                                  <div className="flex items-center">
+                                    <input
+                                      type="number"
+                                      value={quantity}
+                                      onChange={(e) => onQuantityChange(station.id, tank.id, Number(e.target.value))}
+                                      max={tank.capacity - tank.current}
+                                      min={0}
+                                      step="1000"
+                                      className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                      placeholder="0"
+                                    />
+                                    <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">L</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-purple-500 dark:text-purple-400">Venda Prevista</div>
+                                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                                    {(tank.expectedSales || 0).toLocaleString()} L
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-indigo-500 dark:text-indigo-400">Recebimento</div>
+                                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                                    {(tank.expectedDelivery || 0).toLocaleString()} L
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>

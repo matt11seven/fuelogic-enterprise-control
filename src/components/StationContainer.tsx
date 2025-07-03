@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TankData } from "@/types/api";
-import StationCard from "./StationCard";
-import StationListView from "./StationListView";
 import StationTableView from "./StationTableView";
+import StationListView from "./StationListView";
 import StationTableViewGrouped from "./StationTableViewGrouped";
+import StationCard from "./StationCard";
 import ViewToggle from "./ViewToggle";
+import { MockDataProvider } from "../context/MockDataContext";
 import { sendInspectionAlert } from "@/services/inspection-api";
 import { toast } from "@/hooks/use-toast";
 
@@ -104,62 +105,70 @@ export function StationContainer({ stations, onTankSelect, onQuantityChange, sel
     alert(`Visualizando histórico do tanque ${tankId} do posto ${stationId}`);
   };
 
+  // Efeito para pré-gerar todos os dados mock para todas as estações quando o componente montar
+  useEffect(() => {
+    // Este efeito será chamado dentro do MockDataProvider
+    // Não precisa de implementação aqui, só para garantir que o componente remonta quando as estações mudam
+  }, [stations]);
+  
   return (
-    <div className="space-y-4">
-      {/* Cabeçalho com toggle de visualização */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-white">Postos e Tanques</h2>
-        <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
-      </div>
-
-      {/* Visualização em cards, lista ou tabela */}
-      {viewMode === 'cards' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stations.map(station => (
-            <StationCard
-              key={station.id}
-              id={station.id}
-              name={station.name}
-              address={station.address}
-              tanks={station.tanks}
-              onTankSelect={onTankSelect}
-              onQuantityChange={onQuantityChange}
-              selectedTanks={selectedTanks}
-            />
-          ))}
+    <MockDataProvider>
+      <div className="space-y-4">
+        {/* Cabeçalho com toggle de visualização */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-white">Postos e Tanques</h2>
+          <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
         </div>
-      ) : viewMode === 'list' ? (
-        <StationListView
-          stations={stations}
-          onTankSelect={onTankSelect}
-          onQuantityChange={onQuantityChange}
-          selectedTanks={selectedTanks}
-          onRequestFill={handleRequestFill}
-          onMarkInspection={handleMarkInspection}
-          onViewHistory={handleViewHistory}
-        />
-      ) : viewMode === 'grouped' ? (
-        <StationTableViewGrouped
-          stations={stations}
-          onTankSelect={onTankSelect}
-          onQuantityChange={onQuantityChange}
-          selectedTanks={selectedTanks}
-          onRequestFill={handleRequestFill}
-          onMarkInspection={handleMarkInspection}
-          onViewHistory={handleViewHistory}
-        />
-      ) : (
-        <StationTableView
-          stations={stations}
-          onTankSelect={onTankSelect}
-          onQuantityChange={onQuantityChange}
-          selectedTanks={selectedTanks}
-          onRequestFill={handleRequestFill}
-          onMarkInspection={handleMarkInspection}
-          onViewHistory={handleViewHistory}
-        />
-      )}
-    </div>
+
+        {/* Visualização em cards, lista ou tabela */}
+        {viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {stations.map(station => (
+              <StationCard
+                key={station.id}
+                id={station.id}
+                name={station.name}
+                address={station.address}
+                tanks={station.tanks}
+                onTankSelect={onTankSelect}
+                onQuantityChange={onQuantityChange}
+                selectedTanks={selectedTanks}
+              />
+            ))}
+          </div>
+        ) : viewMode === 'list' ? (
+          <StationListView
+            stations={stations}
+            onTankSelect={onTankSelect}
+            onQuantityChange={onQuantityChange}
+            selectedTanks={selectedTanks}
+            onRequestFill={handleRequestFill}
+            onMarkInspection={handleMarkInspection}
+            onViewHistory={handleViewHistory}
+          />
+        ) : viewMode === 'grouped' ? (
+          <StationTableViewGrouped
+            stations={stations}
+            onTankSelect={onTankSelect}
+            onQuantityChange={onQuantityChange}
+            selectedTanks={selectedTanks}
+            onRequestFill={handleRequestFill}
+            onMarkInspection={handleMarkInspection}
+            onViewHistory={handleViewHistory}
+          />
+        ) : (
+          <StationTableView
+            stations={stations}
+            onTankSelect={onTankSelect}
+            onQuantityChange={onQuantityChange}
+            selectedTanks={selectedTanks}
+            onRequestFill={handleRequestFill}
+            onMarkInspection={handleMarkInspection}
+            onViewHistory={handleViewHistory}
+          />
+        )}
+      </div>
+    </MockDataProvider>
   );
 }
 

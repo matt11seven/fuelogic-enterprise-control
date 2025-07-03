@@ -1,13 +1,14 @@
-
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { TankData } from "@/types/api";
 import { Badge } from "./ui/badge";
 import { useConfig } from "@/context/ConfigContext";
+import OccupancyBar from "./OccupancyBar";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { CheckCircle, AlertTriangle, AlertCircle, Droplet, Truck, Eye, FileText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { useMockData } from "@/context/MockDataContext";
 
 interface Tank {
   id: string;
@@ -16,6 +17,8 @@ interface Tank {
   current: number;
   capacity: number;
   apiData?: TankData;
+  expectedSales?: number; // Venda prevista (mock)
+  expectedDelivery?: number; // Recebimento previsto (mock)
 }
 
 interface Station {
@@ -78,10 +81,31 @@ export function StationTableView({
     return waterAmount.toLocaleString(undefined, {maximumFractionDigits: 1});
   };
 
+  // Usar o contexto para obter dados mock estáveis
+  const { getMockDataForTank, generateMockDataForStations } = useMockData();
+  
+  // Gerar dados mock para todas as estações ao montar o componente
+  useEffect(() => {
+    generateMockDataForStations(stations);
+  }, [stations, generateMockDataForStations]);
+  
+  // Aplicar dados mock às estações
+  const stationsWithMockData = stations.map(station => ({
+    ...station,
+    tanks: station.tanks.map(tank => {
+      const mockData = getMockDataForTank(station.id, tank.id);
+      return {
+        ...tank,
+        expectedSales: mockData.expectedSales,
+        expectedDelivery: mockData.expectedDelivery
+      };
+    })
+  }));
+
   // Filtrar estações
   const filteredStations = selectedStation === 'all' 
-    ? stations 
-    : stations.filter(station => station.id === selectedStation);
+    ? stationsWithMockData 
+    : stationsWithMockData.filter(station => station.id === selectedStation);
 
   // Preparar dados para a tabela
   const tableData = filteredStations.flatMap(station => 
@@ -100,6 +124,8 @@ export function StationTableView({
     let totalFillCapacity = 0;
     let totalCurrentVolume = 0;
     let totalCapacity = 0;
+    let totalExpectedSales = 0;
+    let totalExpectedDelivery = 0;
 
     filteredStations.forEach(station => {
       station.tanks.forEach(tank => {
@@ -113,6 +139,8 @@ export function StationTableView({
         totalFillCapacity += (tank.capacity - tank.current);
         totalCurrentVolume += tank.current;
         totalCapacity += tank.capacity;
+        totalExpectedSales += tank.expectedSales || 0;
+        totalExpectedDelivery += tank.expectedDelivery || 0;
       });
     });
     
@@ -121,6 +149,14 @@ export function StationTableView({
     // Calcular a ocupação projetada após o pedido
     const projectedCurrentVolume = totalCurrentVolume + totalOrderQuantity;
     const projectedOccupancyPercentage = totalCapacity > 0 ? (projectedCurrentVolume / totalCapacity) * 100 : 0;
+    
+    // Calcular a ocupação após recebimento (atual + recebimento)
+    const volumeAfterDelivery = totalCurrentVolume + totalExpectedDelivery;
+    const occupancyAfterDeliveryPercentage = totalCapacity > 0 ? (volumeAfterDelivery / totalCapacity) * 100 : 0;
+    
+    // Calcular a projeção final (após recebimento + pedido)
+    const projectedWithSalesAndDelivery = volumeAfterDelivery + totalOrderQuantity;
+    const finalOccupancyPercentage = totalCapacity > 0 ? (projectedWithSalesAndDelivery / totalCapacity) * 100 : 0;
 
     return {
       totalOrderQuantity,
@@ -129,7 +165,13 @@ export function StationTableView({
       totalCapacity,
       occupancyPercentage,
       projectedCurrentVolume,
-      projectedOccupancyPercentage
+      projectedOccupancyPercentage,
+      totalExpectedSales,
+      totalExpectedDelivery,
+      volumeAfterDelivery,
+      occupancyAfterDeliveryPercentage,
+      projectedWithSalesAndDelivery,
+      finalOccupancyPercentage
     };
   };
   
@@ -146,7 +188,7 @@ export function StationTableView({
   return (
     <div className="space-y-4">
       {/* Totalizadores */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
         <div className="bg-blue-100/80 dark:bg-blue-900/20 p-3 rounded-lg shadow-sm">
           <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Pedido Total</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
@@ -159,36 +201,37 @@ export function StationTableView({
             {totals.totalFillCapacity.toLocaleString()} L
           </div>
         </div>
+        
+        <div className="bg-purple-100/80 dark:bg-purple-900/20 p-3 rounded-lg shadow-sm">
+          <div className="text-sm text-purple-600 dark:text-purple-400 mb-1">Venda Prevista</div>
+          <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+            {totals.totalExpectedSales.toLocaleString()} L
+          </div>
+        </div>
+        
+        <div className="bg-indigo-100/80 dark:bg-indigo-900/20 p-3 rounded-lg shadow-sm">
+          <div className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Recebimento Previsto</div>
+          <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
+            {totals.totalExpectedDelivery.toLocaleString()} L
+          </div>
+        </div>
+        
         <div className="bg-amber-100/80 dark:bg-amber-900/20 p-3 rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-1">
-            <div className="text-sm text-amber-600 dark:text-amber-400">Ocupação</div>
-            {totals.totalOrderQuantity > 0 && (
-              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center">
-                <span className="mr-1">Após pedido:</span>
-                <span className="font-bold">{Math.round(totals.projectedOccupancyPercentage)}%</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center">
-            <div className="text-xl font-bold text-amber-700 dark:text-amber-300 mr-2 min-w-[3rem]">
+            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Ocupação</div>
+            <div className="text-xl font-bold text-amber-700 dark:text-amber-300">
               {Math.round(totals.occupancyPercentage)}%
             </div>
-            <div className="flex-1 h-3 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden relative">
-              <div 
-                className="h-full bg-amber-500 dark:bg-amber-500 transition-all duration-300"
-                style={{ width: `${Math.min(totals.occupancyPercentage, 100)}%` }}
-              />
-              {totals.totalOrderQuantity > 0 && (
-                <div 
-                  className="h-full bg-blue-500 dark:bg-blue-500 opacity-70 transition-all duration-300 absolute top-0"
-                  style={{ 
-                    width: `${Math.min(totals.projectedOccupancyPercentage - totals.occupancyPercentage, 100)}%`, 
-                    left: `${Math.min(totals.occupancyPercentage, 100)}%`
-                  }}
-                />
-              )}
-            </div>
           </div>
+          
+          {/* Componente de barra de ocupação */}
+          <OccupancyBar
+            currentOccupancy={totals.occupancyPercentage}
+            afterDeliveryOccupancy={totals.occupancyAfterDeliveryPercentage}
+            finalProjectionOccupancy={totals.finalOccupancyPercentage}
+            height="h-5"
+            legendClassName="text-xs space-x-2"
+          />
         </div>
       </div>
       
@@ -216,15 +259,16 @@ export function StationTableView({
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-slate-700">
+              <TableRow>
                 <TableHead>Posto</TableHead>
                 <TableHead>Tanque</TableHead>
-                <TableHead>Combustível</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Nível</TableHead>
                 <TableHead>Atual/Capacidade</TableHead>
-                <TableHead>Água</TableHead>
-                <TableHead>Quantidade (L)</TableHead>
+                <TableHead>Venda Prevista</TableHead>
+                <TableHead>Recebimento</TableHead>
+                <TableHead>Total Final</TableHead>
+                <TableHead>Quantidade</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -277,25 +321,6 @@ export function StationTableView({
                     </TableCell>
                     
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-20 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${
-                              status.color === 'red' ? 'bg-red-500' :
-                              status.color === 'amber' ? 'bg-amber-500' :
-                              status.color === 'blue' ? 'bg-blue-500' :
-                              'bg-emerald-500'
-                            } transition-all duration-300`}
-                            style={{ width: `${Math.min(status.percentage, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-slate-900 dark:text-white">
-                          {Math.round(status.percentage)}%
-                        </span>
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell>
                       <div className="text-sm">
                         <span className="font-medium text-slate-900 dark:text-white">
                           {tank.current.toLocaleString()}
@@ -307,29 +332,37 @@ export function StationTableView({
                     </TableCell>
                     
                     <TableCell>
-                      {hasWater ? (
-                        <div className="flex items-center space-x-1 text-blue-600 dark:text-blue-400">
-                          <Droplet className="w-3 h-3" />
-                          <span className="text-xs font-medium">
-                            {formatWaterAmount(tank.apiData?.QuantidadeDeAgua || 0)}L
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
+                      <div className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                        {(tank.expectedSales || 0).toLocaleString()} L
+                      </div>
                     </TableCell>
                     
                     <TableCell>
-                      <input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => handleQuantityChange(station.id, tank.id, Number(e.target.value))}
-                        max={tank.capacity - tank.current}
-                        min={0}
-                        step="1000"
-                        className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        placeholder="0"
-                      />
+                      <div className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                        {(tank.expectedDelivery || 0).toLocaleString()} L
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                        {(tank.current + (tank.expectedDelivery || 0) - (tank.expectedSales || 0) + quantity).toLocaleString()} L
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="flex items-center">
+                        <input
+                          type="number"
+                          value={quantity}
+                          onChange={(e) => handleQuantityChange(station.id, tank.id, Number(e.target.value))}
+                          max={tank.capacity - tank.current}
+                          min={0}
+                          step="1000"
+                          className="w-24 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder="0"
+                        />
+                        <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">L</span>
+                      </div>
                     </TableCell>
                     
                     <TableCell>
