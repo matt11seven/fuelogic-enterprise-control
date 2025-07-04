@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
 import { ConfigProvider } from "@/context/ConfigContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { SophiaAIWidget } from "@/components/SophiaChat";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -23,7 +22,6 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <SophiaAIWidget />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={
