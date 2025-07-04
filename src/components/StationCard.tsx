@@ -1,7 +1,8 @@
+
 import { useState, useMemo } from "react";
 import { getFuelColor } from "../utils/fuelColors";
 import { getProductCode } from "../utils/fuelCodes";
-import { MapPin, ArrowUpDown } from "lucide-react";
+import { MapPin, ArrowUpDown, Droplets } from "lucide-react";
 import FuelTank from "./FuelTank";
 import TankDetails from "./TankDetails";
 import { useConfig } from "@/context/ConfigContext";
@@ -124,30 +125,36 @@ const StationCard = ({
     return (
       <div 
         key={tank.id} 
-        className="flex flex-col items-center space-y-1 cursor-pointer hover:opacity-90 transition-opacity min-w-[48px] flex-shrink-0"
+        className="flex flex-col items-center space-y-1 cursor-pointer hover:opacity-90 transition-opacity min-w-[48px] flex-shrink-0 relative group"
         onClick={(e) => expandTankDetails(tank.id, e)}
         aria-expanded={isExpanded}
         title={`Tanque ${tankNumber} - ${tank.type} - Clique para ${isExpanded ? 'fechar' : 'ver'} detalhes`}
       >
+        {/* Indicador de água moderno e elegante */}
+        {hasWater && (
+          <div className="absolute -top-1 -right-1 z-10">
+            <div className="relative">
+              {/* Glow effect sutil */}
+              <div className="absolute inset-0 bg-blue-400/20 rounded-full blur-sm animate-pulse"></div>
+              
+              {/* Indicador principal */}
+              <div className="relative bg-gradient-to-br from-blue-400 to-blue-600 rounded-full w-5 h-5 flex items-center justify-center shadow-md border border-blue-300/40">
+                <Droplets className="w-2.5 h-2.5 text-white" />
+              </div>
+              
+              {/* Tooltip elegante */}
+              <div className="absolute -bottom-6 -left-8 bg-blue-900/95 backdrop-blur-sm text-blue-100 text-xs px-2 py-1 rounded shadow-lg border border-blue-400/30 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                {tank.apiData?.QuantidadeDeAgua.toLocaleString()}L água
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full w-0 h-0 border-l-1 border-r-1 border-b-1 border-transparent border-b-blue-900/95"></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={`hex-badge ${getCodeColor} text-white text-xs ${isExpanded ? 'ring-2 ring-white/50' : ''} relative w-7 h-7 sm:w-8 sm:h-8`}>
           <span className="text-xs sm:text-sm">{tank.code}</span>
-          {hasWater && (
-            <div 
-              className="absolute -bottom-0.5 -right-0.5 bg-blue-400 rounded-full w-4 h-4 border-2 border-blue-900 flex items-center justify-center shadow-lg z-10"
-              title={`Água detectada: ${tank.apiData?.QuantidadeDeAgua.toLocaleString()}L`}
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 24 24" 
-                fill="#1e40af" 
-                stroke="none"
-                className="w-2 h-2"
-              >
-                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-              </svg>
-            </div>
-          )}
         </div>
+        
         <div className="w-3 h-6 sm:w-4 sm:h-8 bg-slate-700 rounded-sm overflow-hidden relative">
           {/* Espaço vazio na parte superior */}
           <div 
