@@ -248,22 +248,22 @@ export function StationTableViewGrouped({
         <div className="flex items-center space-x-4 text-sm">
           <div className="bg-blue-100 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
             <span className="text-blue-700 dark:text-blue-300 font-medium">
-              Pedido Total: {totals.totalOrderQuantity.toLocaleString()}L
+              Pedido Total: {Math.floor(totals.totalOrderQuantity).toLocaleString()}L
             </span>
           </div>
           <div className="bg-emerald-100 dark:bg-emerald-900/20 px-3 py-2 rounded-lg">
             <span className="text-emerald-700 dark:text-emerald-300 font-medium">
-              Capacidade Livre: {totals.totalFillCapacity.toLocaleString()}L
+              Capacidade Livre: {Math.floor(totals.totalFillCapacity).toLocaleString()}L
             </span>
           </div>
           <div className="bg-purple-100 dark:bg-purple-900/20 px-3 py-2 rounded-lg">
             <span className="text-purple-700 dark:text-purple-300 font-medium">
-              Venda Prevista: {totals.totalExpectedSales.toLocaleString()}L
+              Venda Prevista: {Math.floor(totals.totalExpectedSales).toLocaleString()}L
             </span>
           </div>
           <div className="bg-indigo-100 dark:bg-indigo-900/20 px-3 py-2 rounded-lg">
             <span className="text-indigo-700 dark:text-indigo-300 font-medium">
-              Recebimento: {totals.totalExpectedDelivery.toLocaleString()}L
+              Recebimento: {Math.floor(totals.totalExpectedDelivery).toLocaleString()}L
             </span>
           </div>
           <div className="bg-amber-100/80 dark:bg-amber-900/20 px-3 py-2 rounded-lg relative">
@@ -307,22 +307,22 @@ export function StationTableViewGrouped({
                   <div className="flex items-center space-x-3 text-sm">
                     <div className="bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded">
                       <span className="text-blue-700 dark:text-blue-300 font-medium">
-                        Pedido: {stationTotals.orderQuantity.toLocaleString()}L
+                        Pedido: {Math.floor(stationTotals.orderQuantity).toLocaleString()}L
                       </span>
                     </div>
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded">
                       <span className="text-emerald-700 dark:text-emerald-300 font-medium">
-                        Disponível: {stationTotals.fillCapacity.toLocaleString()}L
+                        Disponível: {Math.floor(stationTotals.fillCapacity).toLocaleString()}L
                       </span>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded">
                       <span className="text-purple-700 dark:text-purple-300 font-medium">
-                        Venda: {stationTotals.expectedSales.toLocaleString()}L
+                        Venda: {Math.floor(stationTotals.expectedSales).toLocaleString()}L
                       </span>
                     </div>
                     <div className="bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2 rounded">
                       <span className="text-indigo-700 dark:text-indigo-300 font-medium">
-                        Recebimento: {stationTotals.expectedDelivery.toLocaleString()}L
+                        Recebimento: {Math.floor(stationTotals.expectedDelivery).toLocaleString()}L
                       </span>
                     </div>
                     <div className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
@@ -417,10 +417,10 @@ export function StationTableViewGrouped({
                             <TableCell>
                               <div className="text-sm">
                                 <span className="font-medium text-slate-900 dark:text-white">
-                                  {tank.current.toLocaleString()}
+                                  {Math.floor(tank.current).toLocaleString()}
                                 </span>
                                 <span className="text-slate-500 dark:text-slate-400">
-                                  /{tank.capacity.toLocaleString()} L
+                                  /{Math.floor(tank.capacity).toLocaleString()} L
                                 </span>
                               </div>
                             </TableCell>

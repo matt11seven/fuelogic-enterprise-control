@@ -129,6 +129,8 @@ const Index = () => {
               .reduce((total, tank) => total + tank.quantity, 0)
             }
             onProcessOrder={handleProcessOrder}
+            selectedTanks={selectedTanks}
+            stations={stations}
           />
         )}
       </div>

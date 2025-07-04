@@ -270,27 +270,27 @@ export function StationListView({
         <div className="bg-blue-100/80 dark:bg-blue-900/20 p-3 rounded-lg shadow-sm">
           <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Pedido Total</div>
           <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
-            {totals.totalOrderQuantity.toLocaleString()} L
+            {Math.floor(totals.totalOrderQuantity).toLocaleString()} L
           </div>
         </div>
         <div className="bg-emerald-100/80 dark:bg-emerald-900/20 p-3 rounded-lg shadow-sm">
           <div className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">Capacidade Livre</div>
           <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
-            {totals.totalFillCapacity.toLocaleString()} L
+            {Math.floor(totals.totalFillCapacity).toLocaleString()} L
           </div>
         </div>
         
         <div className="bg-purple-100/80 dark:bg-purple-900/20 p-3 rounded-lg shadow-sm">
           <div className="text-sm text-purple-600 dark:text-purple-400 mb-1">Venda Prevista</div>
           <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
-            {totals.totalExpectedSales.toLocaleString()} L
+            {Math.floor(totals.totalExpectedSales).toLocaleString()} L
           </div>
         </div>
         
         <div className="bg-indigo-100/80 dark:bg-indigo-900/20 p-3 rounded-lg shadow-sm">
           <div className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Recebimento Previsto</div>
           <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
-            {totals.totalExpectedDelivery.toLocaleString()} L
+            {Math.floor(totals.totalExpectedDelivery).toLocaleString()} L
           </div>
         </div>
         <div className="bg-amber-100/80 dark:bg-amber-900/20 p-3 rounded-lg shadow-sm">
@@ -575,7 +575,7 @@ export function StationListView({
                                 
                                 <div className="flex items-center">
                                   <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                                    {tank.current.toLocaleString()} / {tank.capacity.toLocaleString()} L
+                                    {Math.floor(tank.current).toLocaleString()} / {Math.floor(tank.capacity).toLocaleString()} L
                                   </span>
                                 </div>
                               </div>
