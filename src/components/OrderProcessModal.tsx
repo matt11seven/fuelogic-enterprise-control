@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CopyIcon, Brain, CheckIcon, Truck, AlertTriangle } from "lucide-react";
+import { CopyIcon, Brain, CheckIcon, Truck, AlertTriangle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,10 +8,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import webhookApi from "@/services/webhook-api";
+import { useToast } from "@/components/ui/use-toast";
 import { Station } from "@/hooks/use-tank-data";
+import webhookApi from "@/services/webhook-api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface OrderProcessModalProps {
   open: boolean;
@@ -30,6 +41,8 @@ export default function OrderProcessModal({
 }: OrderProcessModalProps): JSX.Element {
   const [isSendingToSophia, setIsSendingToSophia] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
+  const [confirmSophiaOpen, setConfirmSophiaOpen] = useState(false);
+  const { toast } = useToast();
 
   const selectedCount = Object.values(selectedTanks).filter(tank => tank.selected).length;
   const totalLiters = Object.values(selectedTanks)
@@ -322,19 +335,20 @@ export default function OrderProcessModal({
     };
   };
 
-  // Send to Sophia with the proper payload format
+  // Open confirmation dialog before sending to Sophia
+  const handleOpenSophiaConfirmation = () => {
+    setConfirmSophiaOpen(true);
+  };
+  
+  // Send the text to Sophia webhooks
   const handleSendToSophia = async () => {
-    setIsSendingToSophia(true);
-    
     try {
-      // Generate the payload with the structure specified
+      setIsSendingToSophia(true);
+      setConfirmSophiaOpen(false); // Close confirmation dialog
+      
+      // Generate the payload for Sophia
       const payload = generateSophiaPayload();
-      
-      if (!payload) {
-        throw new Error("Não foi possível gerar o payload para Sophia");
-      }
-      
-      console.log("Sending payload to Sophia:", payload);
+      console.log("Sophia payload:", payload);
       
       // Get Sophia webhooks
       const sophiaWebhooks = await webhookApi.getWebhooksByType('sophia_ai_order');
@@ -376,54 +390,125 @@ export default function OrderProcessModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[600px] w-11/12 max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Processar Pedido</DialogTitle>
-          <DialogDescription>
-            {selectedCount} tanques selecionados - Total: {Math.floor(totalLiters).toLocaleString()}L
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* Main order process dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[600px] w-11/12 overflow-y-auto max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Processar Pedido</DialogTitle>
+            <DialogDescription>
+              {selectedCount} tanques selecionados - Total: {Math.floor(totalLiters).toLocaleString()}L
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="py-4">
-          <div className="rounded-md bg-slate-50 dark:bg-slate-900 p-4 font-mono text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto overflow-x-hidden break-words">
-            {formatOrderText()}
+          <div className="py-4">
+            <div className="rounded-md bg-slate-50 dark:bg-slate-900 p-4 font-mono text-sm whitespace-pre-wrap max-h-[300px] overflow-y-auto overflow-x-hidden break-words">
+              {formatOrderText()}
+            </div>
           </div>
-        </div>
 
-        <DialogFooter className="flex flex-wrap gap-2 justify-end">
-          <Button variant="outline" onClick={handleCopyToClipboard} className="flex items-center gap-1">
-            {hasCopied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
-            <span>{hasCopied ? 'Copiado!' : 'Copiar'}</span>
-          </Button>
+          {/* Order text actions - secondary prominence */}
+          <div className="flex justify-start items-center mb-3 border-t pt-3 border-slate-200 dark:border-slate-700">
+            <Button 
+              variant="ghost" 
+              onClick={handleCopyToClipboard} 
+              className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 h-9 px-3"
+              size="sm"
+            >
+              {hasCopied ? 
+                <CheckIcon className="h-3.5 w-3.5 text-emerald-500" /> : 
+                <CopyIcon className="h-3.5 w-3.5" />
+              }
+              <span className="text-sm">{hasCopied ? 'Copiado!' : 'Copiar texto'}</span>
+            </Button>
+          </div>
+          
+          {/* Action buttons container - improved layout for better flow */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 mb-2 bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+            {/* Sophia integration - primary action with cleaner, more compact styling */}
+            <div className="col-span-1 sm:col-span-2">
+              <Button 
+                variant="default" 
+                onClick={handleOpenSophiaConfirmation}
+                disabled={isSendingToSophia}
+                className={`
+                  w-full h-full py-2 px-2
+                  bg-gradient-to-r from-emerald-600 to-emerald-500
+                  hover:from-emerald-700 hover:to-emerald-600
+                  text-white font-medium
+                  shadow-md hover:shadow-lg
+                  transition-all duration-200
+                  rounded-md border border-emerald-500/30
+                  flex flex-col items-center justify-center
+                  min-h-[70px]
+                  ${isSendingToSophia ? 'opacity-90' : ''}
+                `}
+              >
+                {isSendingToSophia ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-b-transparent border-white mb-1"></div>
+                    <span className="text-sm whitespace-normal text-center">Enviando para Sophia...</span>
+                  </>  
+                ) : (
+                  <>
+                    <Brain className="h-5 w-5 mb-1" />
+                    <span className="text-sm font-semibold whitespace-normal text-center">Enviar para Sophia</span>
+                    <span className="text-xs text-emerald-100 mt-0.5 whitespace-normal text-center">IA avançada de processamento</span>
+                  </>
+                )}
+              </Button>
+            </div>
             
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button variant="default" onClick={handleProcessOrder}>
-            <Truck className="mr-2 h-4 w-4" />
-            Processar Pedido
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={handleSendToSophia}
-            disabled={isSendingToSophia}
-            className="w-full sm:w-auto sm:flex-none mt-2 sm:mt-0"
-          >
-            {isSendingToSophia ? (
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-current mr-2"></div>
-                Enviando...
-              </div>
-            ) : (
-              <>
-                <Brain className="mr-2 h-4 w-4" />
-                Enviar para Sophia
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {/* Secondary actions with balanced prominence */}
+            <div className="col-span-1 flex flex-col gap-2 justify-between">
+              <Button 
+                variant="default" 
+                onClick={handleProcessOrder}
+                className="flex items-center justify-center py-2 bg-emerald-500 hover:bg-emerald-600 text-white"
+              >
+                <Truck className="h-4 w-4 mr-1.5" />
+                <span className="text-sm whitespace-normal">Processar Pedido</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setOpen(false)}
+                className="h-9 border-slate-300 dark:border-slate-700 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <span className="text-sm">Cancelar</span>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Confirmation dialog for Sophia */}
+      <AlertDialog open={confirmSophiaOpen} onOpenChange={setConfirmSophiaOpen}>
+        <AlertDialogContent className="max-w-[450px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-emerald-500" />
+              <span>Confirmação de envio para Sophia</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a enviar um pedido de {Math.floor(totalLiters).toLocaleString()}L para a IA Sophia.
+              <br /><br />
+              Este pedido será processado automaticamente pela Sophia e os fornecedores serão notificados conforme as configurações.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel className="mt-2 sm:mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSendToSophia}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 flex items-center justify-center"
+            >
+              <Brain className="h-4 w-4" />
+              Confirmar envio para Sophia
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
