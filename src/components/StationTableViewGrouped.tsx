@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { getFuelColor } from "../utils/fuelColors";
 import { getProductCode } from "../utils/fuelCodes";
+import { calculateTotalFinal } from "../utils/tankCalculations";
 import { TankData } from "@/types/api";
 import { Badge } from "./ui/badge";
 import { useConfig } from "@/context/ConfigContext";
@@ -435,14 +436,22 @@ export function StationTableViewGrouped({
                                 {(tank.expectedDelivery || 0).toLocaleString()} L
                               </div>
                             </TableCell>
-                            
-                            <TableCell>
-                              <div className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                                {(tank.current + (tank.expectedDelivery || 0) - (tank.expectedSales || 0) + quantity).toLocaleString()} L
-                              </div>
-                            </TableCell>
-                            
 
+                            <TableCell>
+                              {(() => {
+                                const totalValue = calculateTotalFinal(tank.current, tank.expectedDelivery || 0, tank.expectedSales || 0, quantity, false) as number;
+                                const formattedValue = totalValue.toLocaleString();
+                                const textColorClass = totalValue < 0 
+                                  ? "text-red-600 dark:text-red-400" 
+                                  : "text-teal-700 dark:text-teal-300";
+                                
+                                return (
+                                  <div className={`text-sm font-medium ${textColorClass}`}>
+                                    {formattedValue} L
+                                  </div>
+                                );
+                              })()}
+                            </TableCell>
                             
                             <TableCell>
                               <input
