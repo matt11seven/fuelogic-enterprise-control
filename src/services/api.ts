@@ -1,4 +1,5 @@
 import { TankData } from "../types/api";
+import { getProductCode as getProductCodeUtil } from "../utils/fuelCodes";
 
 export const API_ENDPOINT = import.meta.env.VITE_TANKS_ENDPOINT;
 
@@ -79,19 +80,9 @@ export function groupTanksByStation(tanks: TankData[]): Record<string, TankData[
 }
 
 /**
- * Mapeamento de códigos de produto para os códigos de exibição
+ * Re-exporta a função getProductCode do utilitário centralizado
+ * Isso garante que usamos sempre o mesmo mapeamento em toda aplicação
  */
 export function getProductCode(productName: string): string {
-  const productMap: Record<string, string> = {
-    'GASOLINA COMUM': 'GC',
-    'GASOLINA GRID': 'GA',
-    'GASOLINA ADITIVADA': 'GA',
-    'GASOLINA PODIUM': 'GP',
-    'DIESEL S10': 'S10',
-    'DIESEL S10 GRID': 'S10A',
-    'DIESEL COMUM': 'DS',
-    'ETANOL': 'ET'
-  };
-  
-  return productMap[productName.trim()] || 'XX';
+  return getProductCodeUtil(productName);
 }
