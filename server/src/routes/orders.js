@@ -65,6 +65,18 @@ function normalizeOrderRow(row) {
   return { ...row, status: fromDbStatus(row.status) };
 }
 
+function canTransitionOrderStatus(current, next) {
+  const transitions = {
+    pending: new Set(['quoted', 'cancelled']),
+    quoted: new Set(['approved', 'cancelled']),
+    approved: new Set(['delivering', 'cancelled']),
+    delivering: new Set(['delivered', 'cancelled']),
+    delivered: new Set([]),
+    cancelled: new Set([]),
+  };
+  return transitions[current]?.has(next) || false;
+}
+
 async function resolveOrderUserId(reqUser) {
   const rawId = reqUser?.id;
   if (rawId && rawId !== 'master-user') return rawId;
@@ -300,23 +312,59 @@ router.patch('/:id/status', async (req, res) => {
 
     const validStatuses = ['pending', 'quoted', 'approved', 'delivering', 'delivered', 'cancelled'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Status invÃ¡lido' });
+      return res.status(400).json({ message: 'Status inválido' });
     }
-    const dbStatus = await toDbStatus(status);
 
     await db.query('BEGIN');
 
+    const existingResult = await db.query(
+      `SELECT id, status, group_id, delivery_estimate
+       FROM orders
+       WHERE id = $1 AND user_id = $2
+       LIMIT 1`,
+      [orderId, userId],
+    );
+
+    if (existingResult.rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+
+    const existing = normalizeOrderRow(existingResult.rows[0]);
+    if (!canTransitionOrderStatus(existing.status, status)) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({
+        message: `Transição inválida: ${existing.status} -> ${status}`,
+      });
+    }
+
+    if (status === 'approved' && existing.group_id) {
+      const quoteCount = await db.query(
+        `SELECT COUNT(*)::int AS total FROM order_quotations WHERE order_group_id = $1`,
+        [existing.group_id],
+      );
+      if ((quoteCount.rows[0]?.total || 0) < 1) {
+        await db.query('ROLLBACK');
+        return res.status(400).json({
+          message: 'Aprovação humana requer pelo menos 1 cotação registrada.',
+        });
+      }
+    }
+
+    if (status === 'delivering' && !existing.delivery_estimate) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({
+        message: 'Para iniciar entrega, defina a previsão de entrega (ETA).',
+      });
+    }
+
+    const dbStatus = await toDbStatus(status);
     const result = await db.query(
       `UPDATE orders SET status = $1, updated_at = NOW()
        WHERE id = $2 AND user_id = $3
        RETURNING *`,
       [dbStatus, orderId, userId]
     );
-
-    if (result.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ message: 'Pedido nÃ£o encontrado' });
-    }
 
     await db.query(
       `INSERT INTO order_timeline (order_id, status, description, created_by)
@@ -333,7 +381,6 @@ router.patch('/:id/status', async (req, res) => {
     res.status(500).json({ message: 'Erro ao atualizar status' });
   }
 });
-
 // PATCH /api/orders/:id/sophia-sent - Marcar como enviado para Sophia
 router.patch('/:id/sophia-sent', async (req, res) => {
   try {
@@ -396,7 +443,7 @@ router.patch('/group/:groupId/sophia-sent', async (req, res) => {
     for (const row of result.rows) {
       await db.query(
         `INSERT INTO order_timeline (order_id, status, description, created_by)
-         VALUES ($1, 'pending', 'Enviado para Sophia para cotaÃ§Ã£o', 'sistema')`,
+         VALUES ($1, 'pending', 'Enviado para Sophia para cotação', 'sistema')`,
         [row.id]
       );
     }
@@ -414,7 +461,6 @@ router.patch('/group/:groupId/sophia-sent', async (req, res) => {
     return res.status(500).json({ message: 'Erro ao atualizar pedidos do grupo' });
   }
 });
-
 // PATCH /api/orders/:id/truck - Vincular caminhÃ£o
 router.patch('/:id/truck', async (req, res) => {
   try {
@@ -507,16 +553,16 @@ router.post('/:id/notes', async (req, res) => {
   }
 });
 
-// POST /api/orders/group/:groupId/quotations - Receber cotaÃ§Ãµes por grupo
+// POST /api/orders/group/:groupId/quotations - Receber cotações por grupo
 router.post('/group/:groupId/quotations', async (req, res) => {
   try {
     const userId = await getRequestUserIdOrFail(req, res);
     if (!userId) return;
     const { groupId } = req.params;
-    const { quotations } = req.body;
+    const { quotations, source = 'manual' } = req.body;
 
     if (!quotations || !Array.isArray(quotations)) {
-      return res.status(400).json({ message: 'Lista de cotaÃ§Ãµes invÃ¡lida' });
+      return res.status(400).json({ message: 'Lista de cotações inválida' });
     }
 
     await db.query('BEGIN');
@@ -541,11 +587,16 @@ router.post('/group/:groupId/quotations', async (req, res) => {
       [groupId, userId]
     );
 
+    const timelineDescription = source === 'sophia'
+      ? 'Cotações recebidas da Sophia'
+      : 'Cotações registradas manualmente';
+    const timelineActor = source === 'sophia' ? 'sophia' : 'operador';
+
     for (const row of orderIds.rows) {
       await db.query(
         `INSERT INTO order_timeline (order_id, status, description, created_by)
-         VALUES ($1, 'quoted', 'CotaÃ§Ãµes recebidas da Sophia', 'sophia')`,
-        [row.id]
+         VALUES ($1, 'quoted', $2, $3)`,
+        [row.id, timelineDescription, timelineActor]
       );
     }
 
@@ -554,9 +605,10 @@ router.post('/group/:groupId/quotations', async (req, res) => {
     res.json({ success: true, quotations_saved: quotations.length });
   } catch (error) {
     await db.query('ROLLBACK');
-    console.error('Erro ao salvar cotaÃ§Ãµes:', error);
-    res.status(500).json({ message: 'Erro ao salvar cotaÃ§Ãµes' });
+    console.error('Erro ao salvar cotações:', error);
+    res.status(500).json({ message: 'Erro ao salvar cotações' });
   }
 });
 
 module.exports = router;
+

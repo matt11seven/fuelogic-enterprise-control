@@ -33,3 +33,50 @@ dist-ssr
 
 
 *.windsurf
+
+# Environment & Secrets (AIOS)
+.env.*.local
+*.key
+*.pem
+
+# Dependencies (AIOS)
+node_modules/
+
+# Build & Logs (AIOS)
+dist/
+build/
+logs/
+
+# IDE & OS (AIOS)
+Thumbs.db
+.idea/
+*.swp
+
+# AIOS Local (AIOS)
+.aios-core/local/
+.claude/settings.local.json
+.aios/install-log.txt
+
+# ========================================
+# AIOS Integration Section
+# Added by AIOS Documentation Integrity System
+# Date: 2026-03-04
+# ========================================
+
+# AIOS Local Configuration
+.aios-core/local/
+.aios-core/*.local.yaml
+.aios-core/logs/
+.aios-core/cache/
+.agent
+.aios-core
+.antigravity
+.claude
+.codex
+
+# AIOS Generated (optional - uncomment if needed)
+# .aios-core/generated/
+
+# ========================================
+# End of AIOS Integration Section
+# ========================================

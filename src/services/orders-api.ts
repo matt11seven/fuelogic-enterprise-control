@@ -61,6 +61,15 @@ export interface OrderQuotation {
   created_at: string;
 }
 
+export interface ManualOrderQuotationInput {
+  supplier_name: string;
+  product_type: string;
+  unit_price: number;
+  total_price: number;
+  delivery_days: number;
+  notes?: string | null;
+}
+
 export interface OrderDetail extends OrderItem {
   timeline: OrderTimeline[];
   quotations: OrderQuotation[];
@@ -146,6 +155,15 @@ const addNote = async (id: number, note: string): Promise<OrderItem> => {
   return response.data;
 };
 
+const addGroupQuotations = async (
+  groupId: string,
+  quotations: ManualOrderQuotationInput[],
+  source: 'manual' | 'sophia' = 'manual',
+): Promise<{ success: boolean; quotations_saved: number }> => {
+  const response = await ordersApi.post(`/group/${groupId}/quotations`, { quotations, source });
+  return response.data;
+};
+
 const ordersApiService = {
   getOrders,
   getOrderById,
@@ -157,6 +175,7 @@ const ordersApiService = {
   assignTruck,
   setDeliveryEstimate,
   addNote,
+  addGroupQuotations,
 };
 
 export default ordersApiService;

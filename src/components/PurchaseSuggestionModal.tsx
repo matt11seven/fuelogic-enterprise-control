@@ -19,6 +19,7 @@ import { Station } from "@/hooks/use-tank-data";
 import { toast } from "@/hooks/use-toast";
 import ordersApiService from "@/services/orders-api";
 import sophiaOpsApi from "@/services/sophia-ops-api";
+import ConfigurationAPI from "@/services/configuration-api";
 
 // Interface para sugestão de compra para um tanque
 interface TankPurchaseSuggestion {
@@ -40,9 +41,15 @@ interface TruckWithSelection extends TruckType {
 
 interface PurchaseSuggestionModalProps {
   stations: Station[] | undefined;
+  triggerLabel?: string;
+  compactTrigger?: boolean;
 }
 
-export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestionModalProps): JSX.Element {
+export default function PurchaseSuggestionModal({
+  stations,
+  triggerLabel = "Sugerir Compras",
+  compactTrigger = false,
+}: PurchaseSuggestionModalProps): JSX.Element {
   // Obter os thresholds configurados do contexto global
   const { thresholds } = useConfig();
   const [open, setOpen] = useState(false);
@@ -52,6 +59,7 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
   const [calculatedOrders, setCalculatedOrders] = useState<any[]>([]);
   // Estado para indicar quando está enviando para a Sophia
   const [isSendingToSophia, setIsSendingToSophia] = useState(false);
+  const [sophiaQuoteEnabled, setSophiaQuoteEnabled] = useState(false);
   const [totalSuggestedLiters, setTotalSuggestedLiters] = useState<number>(0);
   
   // Estado para o modal de seleção de caminhões
@@ -71,6 +79,18 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
       generatePurchaseSuggestions();
     }
   }, [open, stations, priorityFilter, truckCapacity]);
+
+  useEffect(() => {
+    const loadSophiaConfig = async () => {
+      try {
+        const cfg = await ConfigurationAPI.getSophiaConfig();
+        setSophiaQuoteEnabled(!!cfg.use_quote_assistant);
+      } catch {
+        setSophiaQuoteEnabled(false);
+      }
+    };
+    loadSophiaConfig();
+  }, []);
 
   const generatePurchaseSuggestions = () => {
     if (!stations) return;
@@ -389,6 +409,13 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
   
   // Handler para enviar dados para a IA Sophia
   const handleSendToSophia = async () => {
+    if (!sophiaQuoteEnabled) {
+      toast({
+        title: "Sophia desativada para cotação",
+        description: "Ative em Configurações > Integrações APIs para usar esse fluxo.",
+      });
+      return;
+    }
     if (calculatedOrders.length === 0) {
       toast({
         title: "Sem sugestões",
@@ -504,10 +531,11 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
       <Button 
         onClick={() => setOpen(true)} 
         variant="outline" 
-        className="flex items-center bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40"
+        size={compactTrigger ? "sm" : "default"}
+        className={`flex items-center bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40 ${compactTrigger ? "h-7 px-2 text-xs" : ""}`}
       >
         <ShoppingCart className="w-4 h-4 mr-2" />
-        Sugerir Compras
+        {triggerLabel}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -679,9 +707,9 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
             </Button>
             <Button 
               onClick={handleSendToSophia} 
-              disabled={calculatedOrders.length === 0 || isSendingToSophia}
+              disabled={calculatedOrders.length === 0 || isSendingToSophia || !sophiaQuoteEnabled}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              title="Enviar para a IA Sophia"
+              title={sophiaQuoteEnabled ? "Enviar para a IA Sophia" : "Sophia desativada"}
             >
               <Brain className="w-4 h-4 mr-2" />
               {isSendingToSophia ? "Enviando..." : "Enviar para Sophia"}

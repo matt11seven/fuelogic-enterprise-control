@@ -59,10 +59,33 @@ export function OrderDetailsDrawer({ order, onClose, onUpdated }: OrderDetailsDr
       await loadDetail(detail.id);
       onUpdated();
       toast({ title: "Status atualizado" });
-    } catch {
-      toast({ title: "Erro ao atualizar status", variant: "destructive" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Falha ao atualizar status";
+      toast({ title: "Erro ao atualizar status", description: msg, variant: "destructive" });
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleAddManualQuotation = async (payload: {
+    supplier_name: string;
+    product_type: string;
+    unit_price: number;
+    total_price: number;
+    delivery_days: number;
+    notes?: string;
+  }) => {
+    if (!detail?.group_id) {
+      toast({ title: "Pedido sem grupo", variant: "destructive" });
+      return;
+    }
+    try {
+      await ordersApiService.addGroupQuotations(detail.group_id, [payload], "manual");
+      await loadDetail(detail.id);
+      onUpdated();
+      toast({ title: "Cotacao manual registrada" });
+    } catch {
+      toast({ title: "Erro ao registrar cotacao manual", variant: "destructive" });
     }
   };
 
@@ -72,19 +95,11 @@ export function OrderDetailsDrawer({ order, onClose, onUpdated }: OrderDetailsDr
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-md h-full overflow-y-auto flex flex-col shadow-2xl
-        bg-white dark:bg-slate-950
-        border-l border-emerald-100 dark:border-white/10">
-
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4
-          border-b border-emerald-100 dark:border-white/10
-          bg-white/90 dark:bg-slate-950/90 backdrop-blur-md">
+      <div className="relative w-full max-w-md h-full overflow-y-auto flex flex-col shadow-2xl bg-white dark:bg-slate-950 border-l border-emerald-100 dark:border-white/10">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-emerald-100 dark:border-white/10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 dark:text-slate-100">
-                Pedido #{order.id}
-              </span>
+              <span className="font-bold text-slate-900 dark:text-slate-100">Pedido #{order.id}</span>
               {detail && <OrderStatusBadge status={detail.status} />}
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">{order.station_name}</p>
@@ -98,26 +113,26 @@ export function OrderDetailsDrawer({ order, onClose, onUpdated }: OrderDetailsDr
         </div>
 
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-            Carregando...
-          </div>
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">Carregando...</div>
         ) : detail ? (
           <div className="flex-1 p-4 space-y-3">
-
-            {/* Info básica */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "Produto", value: detail.product_type },
-                { label: "Volume", value: `${Number(detail.quantity).toLocaleString('pt-BR')} L`, mono: true },
-                { label: "Criado em", value: new Date(detail.created_at).toLocaleString('pt-BR') },
-                ...(detail.sophia_sent_at ? [{
-                  label: "Enviado Sophia",
-                  value: new Date(detail.sophia_sent_at).toLocaleString('pt-BR'),
-                }] : []),
+                { label: "Volume", value: `${Number(detail.quantity).toLocaleString("pt-BR")} L`, mono: true },
+                { label: "Criado em", value: new Date(detail.created_at).toLocaleString("pt-BR") },
+                ...(detail.sophia_sent_at
+                  ? [
+                      {
+                        label: "Enviado Sophia",
+                        value: new Date(detail.sophia_sent_at).toLocaleString("pt-BR"),
+                      },
+                    ]
+                  : []),
               ].map((item) => (
                 <div key={item.label} className="glass-card px-3 py-2">
                   <p className="text-xs text-slate-500 dark:text-slate-500">{item.label}</p>
-                  <p className={`text-sm font-medium text-slate-900 dark:text-slate-200 mt-0.5 ${item.mono ? 'font-mono' : ''}`}>
+                  <p className={`text-sm font-medium text-slate-900 dark:text-slate-200 mt-0.5 ${item.mono ? "font-mono" : ""}`}>
                     {item.value}
                   </p>
                 </div>
@@ -128,11 +143,17 @@ export function OrderDetailsDrawer({ order, onClose, onUpdated }: OrderDetailsDr
               <OrderTimeline timeline={detail.timeline} />
             </Section>
 
-            <Section title="Cotações Sophia">
-              <QuotationsPanel quotations={detail.quotations} />
+            <Section title="Cotacoes">
+              <QuotationsPanel
+                quotations={detail.quotations}
+                allowManual
+                onAddManual={handleAddManualQuotation}
+                productType={detail.product_type}
+                quantity={Number(detail.quantity || 0)}
+              />
             </Section>
 
-            <Section title="Caminhão">
+            <Section title="Caminhao">
               {detail.truck_name && (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Atual: {detail.truck_name} ({detail.license_plate})
@@ -146,10 +167,10 @@ export function OrderDetailsDrawer({ order, onClose, onUpdated }: OrderDetailsDr
               />
             </Section>
 
-            <Section title="Previsão de Entrega">
+            <Section title="Previsao de Entrega">
               {detail.delivery_estimate && (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Atual: {new Date(detail.delivery_estimate).toLocaleString('pt-BR')}
+                  Atual: {new Date(detail.delivery_estimate).toLocaleString("pt-BR")}
                 </p>
               )}
               <DeliveryEstimatePanel
@@ -160,58 +181,53 @@ export function OrderDetailsDrawer({ order, onClose, onUpdated }: OrderDetailsDr
             </Section>
 
             <Section title="Notas">
-              <OrderNotesPanel
-                orderId={detail.id}
-                notes={detail.notes}
-                onUpdated={() => loadDetail(detail.id)}
-              />
+              <OrderNotesPanel orderId={detail.id} notes={detail.notes} onUpdated={() => loadDetail(detail.id)} />
             </Section>
 
-            {/* Ações */}
-            {detail.status !== 'cancelled' && detail.status !== 'delivered' && (
+            {detail.status !== "cancelled" && detail.status !== "delivered" && (
               <div className="flex gap-2 pb-2">
                 <Button
                   variant="outline"
                   size="sm"
                   className="flex-1 border-red-400/40 text-red-500 hover:bg-red-500/10 hover:border-red-400"
                   disabled={isUpdatingStatus}
-                  onClick={() => handleStatusChange('cancelled', 'Pedido cancelado pelo operador')}
+                  onClick={() => handleStatusChange("cancelled", "Pedido cancelado pelo operador")}
                 >
                   <XCircle className="w-4 h-4 mr-1.5" />
                   Cancelar
                 </Button>
 
-                {detail.status === 'quoted' && (
+                {detail.status === "quoted" && (
                   <Button
                     size="sm"
                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                     disabled={isUpdatingStatus}
-                    onClick={() => handleStatusChange('approved', 'Pedido aprovado pelo operador')}
+                    onClick={() => handleStatusChange("approved", "Pedido aprovado pelo operador")}
                   >
                     <CheckCircle className="w-4 h-4 mr-1.5" />
                     Aprovar
                   </Button>
                 )}
 
-                {detail.status === 'approved' && (
+                {detail.status === "approved" && (
                   <Button
                     size="sm"
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                     disabled={isUpdatingStatus}
-                    onClick={() => handleStatusChange('delivering', 'Pedido em rota de entrega')}
+                    onClick={() => handleStatusChange("delivering", "Pedido em rota de entrega")}
                   >
                     <Package className="w-4 h-4 mr-1.5" />
                     Em Entrega
                   </Button>
                 )}
 
-                {detail.status === 'delivering' && (
+                {detail.status === "delivering" && (
                   <Button
                     size="sm"
                     variant="outline"
                     className="flex-1"
                     disabled={isUpdatingStatus}
-                    onClick={() => handleStatusChange('delivered', 'Pedido entregue com sucesso')}
+                    onClick={() => handleStatusChange("delivered", "Pedido entregue com sucesso")}
                   >
                     <CheckCircle className="w-4 h-4 mr-1.5" />
                     Entregue

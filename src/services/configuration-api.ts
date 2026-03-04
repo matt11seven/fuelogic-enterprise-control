@@ -25,6 +25,7 @@ export interface SophiaConfigurationSettings {
   openai_api_key: string;
   openrouter_api_key: string;
   anthropic_api_key: string;
+  use_quote_assistant: boolean;
 }
 
 export const DEFAULT_SOPHIA_CONFIG: SophiaConfigurationSettings = {
@@ -33,6 +34,7 @@ export const DEFAULT_SOPHIA_CONFIG: SophiaConfigurationSettings = {
   openai_api_key: '',
   openrouter_api_key: '',
   anthropic_api_key: '',
+  use_quote_assistant: false,
 };
 
 // Valores padrão para as configurações de threshold

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CopyIcon, Brain, CheckIcon, Truck, AlertTriangle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Station } from "@/hooks/use-tank-data";
 import ordersApiService from "@/services/orders-api";
 import sophiaOpsApi from "@/services/sophia-ops-api";
+import ConfigurationAPI from "@/services/configuration-api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +44,20 @@ export default function OrderProcessModal({
   const [isSendingToSophia, setIsSendingToSophia] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [confirmSophiaOpen, setConfirmSophiaOpen] = useState(false);
+  const [sophiaQuoteEnabled, setSophiaQuoteEnabled] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const cfg = await ConfigurationAPI.getSophiaConfig();
+        setSophiaQuoteEnabled(!!cfg.use_quote_assistant);
+      } catch {
+        setSophiaQuoteEnabled(false);
+      }
+    };
+    load();
+  }, []);
 
   const selectedCount = Object.values(selectedTanks).filter(tank => tank.selected).length;
   const totalLiters = Object.values(selectedTanks)
@@ -338,6 +352,13 @@ export default function OrderProcessModal({
 
   // Open confirmation dialog before sending to Sophia
   const handleOpenSophiaConfirmation = () => {
+    if (!sophiaQuoteEnabled) {
+      toast({
+        title: "Sophia desativada para cotação",
+        description: "Ative em Configurações > Integrações APIs para usar esse fluxo.",
+      });
+      return;
+    }
     setConfirmSophiaOpen(true);
   };
   
@@ -475,7 +496,7 @@ export default function OrderProcessModal({
               <Button 
                 variant="default" 
                 onClick={handleOpenSophiaConfirmation}
-                disabled={isSendingToSophia}
+                disabled={isSendingToSophia || !sophiaQuoteEnabled}
                 className={`
                   w-full h-full py-2 px-2
                   bg-gradient-to-r from-emerald-600 to-emerald-500
@@ -486,7 +507,7 @@ export default function OrderProcessModal({
                   rounded-md border border-emerald-500/30
                   flex flex-col items-center justify-center
                   min-h-[70px]
-                  ${isSendingToSophia ? 'opacity-90' : ''}
+                  ${isSendingToSophia || !sophiaQuoteEnabled ? 'opacity-70' : ''}
                 `}
               >
                 {isSendingToSophia ? (

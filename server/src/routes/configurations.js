@@ -14,6 +14,7 @@ const SOPHIA_DEFAULTS = {
   openai_api_key: '',
   openrouter_api_key: '',
   anthropic_api_key: '',
+  use_quote_assistant: false,
 };
 
 async function ensureSophiaConfigTable() {
@@ -26,9 +27,14 @@ async function ensureSophiaConfigTable() {
       openai_api_key TEXT,
       openrouter_api_key TEXT,
       anthropic_api_key TEXT,
+      use_quote_assistant BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+  await db.query(`
+    ALTER TABLE sophia_configuracoes
+    ADD COLUMN IF NOT EXISTS use_quote_assistant BOOLEAN NOT NULL DEFAULT FALSE
   `);
 }
 
@@ -132,7 +138,7 @@ router.get('/sophia', authenticateToken, async (req, res) => {
 
     const result = await db.query(
       `
-      SELECT provider, model, openai_api_key, openrouter_api_key, anthropic_api_key
+      SELECT provider, model, openai_api_key, openrouter_api_key, anthropic_api_key, use_quote_assistant
       FROM sophia_configuracoes
       WHERE user_id = $1
       `,
@@ -164,6 +170,7 @@ router.put('/sophia', authenticateToken, async (req, res) => {
       openai_api_key = '',
       openrouter_api_key = '',
       anthropic_api_key = '',
+      use_quote_assistant = false,
     } = req.body;
 
     const allowedProviders = ['openai', 'openrouter', 'anthropic'];
@@ -180,9 +187,9 @@ router.put('/sophia', authenticateToken, async (req, res) => {
     const result = await db.query(
       `
       INSERT INTO sophia_configuracoes (
-        user_id, provider, model, openai_api_key, openrouter_api_key, anthropic_api_key
+        user_id, provider, model, openai_api_key, openrouter_api_key, anthropic_api_key, use_quote_assistant
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (user_id)
       DO UPDATE SET
         provider = EXCLUDED.provider,
@@ -190,10 +197,11 @@ router.put('/sophia', authenticateToken, async (req, res) => {
         openai_api_key = EXCLUDED.openai_api_key,
         openrouter_api_key = EXCLUDED.openrouter_api_key,
         anthropic_api_key = EXCLUDED.anthropic_api_key,
+        use_quote_assistant = EXCLUDED.use_quote_assistant,
         updated_at = CURRENT_TIMESTAMP
-      RETURNING provider, model, openai_api_key, openrouter_api_key, anthropic_api_key
+      RETURNING provider, model, openai_api_key, openrouter_api_key, anthropic_api_key, use_quote_assistant
       `,
-      [userId, provider, model.trim(), openai_api_key, openrouter_api_key, anthropic_api_key],
+      [userId, provider, model.trim(), openai_api_key, openrouter_api_key, anthropic_api_key, Boolean(use_quote_assistant)],
     );
 
     return res.json(result.rows[0]);

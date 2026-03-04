@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import ConfigurationAPI, {
   DEFAULT_SOPHIA_CONFIG,
@@ -158,6 +159,23 @@ const SophiaConfiguration = () => {
           />
         </div>
 
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <div>
+            <Label htmlFor="use-quote-assistant">Usar Sophia na cotação</Label>
+            <p className="text-xs text-slate-500 mt-1">
+              Quando desligado, o fluxo de cotação permanece 100% manual.
+            </p>
+          </div>
+          <Switch
+            id="use-quote-assistant"
+            checked={!!config.use_quote_assistant}
+            onCheckedChange={(checked) =>
+              setConfig((prev) => ({ ...prev, use_quote_assistant: checked }))
+            }
+            disabled={isLoading}
+          />
+        </div>
+
         <Button onClick={handleSave} disabled={isSaving || isLoading} className="w-full sm:w-auto">
           <Save className="w-4 h-4 mr-2" />
           {isSaving ? "Salvando..." : "Salvar Sophia AI"}
@@ -168,4 +186,3 @@ const SophiaConfiguration = () => {
 };
 
 export default SophiaConfiguration;
-
