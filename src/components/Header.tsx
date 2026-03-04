@@ -3,11 +3,13 @@ import { Database, Sun, Moon } from "lucide-react";
 import { ProfileButton } from "./ProfileButton";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { Link, useLocation } from "react-router-dom";
 
 const Header = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const location = useLocation();
 
   // Usar useEffect para evitar problemas de hidratação com SSR
   useEffect(() => {
@@ -44,6 +46,38 @@ const Header = () => {
         </div>
         
         <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2">
+            <Link
+              to="/"
+              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                location.pathname === "/"
+                  ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
+                  : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
+              }`}
+            >
+              Operação
+            </Link>
+            <Link
+              to="/pedidos"
+              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                location.pathname === "/pedidos"
+                  ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
+                  : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
+              }`}
+            >
+              Pedidos
+            </Link>
+            <Link
+              to="/sophia-ops"
+              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+                location.pathname === "/sophia-ops"
+                  ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
+                  : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
+              }`}
+            >
+              Soph<span className="uppercase">IA</span>
+            </Link>
+          </div>
           <ProfileButton />
           <button
             onClick={toggleTheme}

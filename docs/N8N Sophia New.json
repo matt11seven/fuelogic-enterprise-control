@@ -1,0 +1,478 @@
+{
+  "name": "Sophia New",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7e0dfb50-ef94-45ec-926c-9b05a3f3ff75",
+      "name": "When chat message received",
+      "webhookId": "8c840164-a944-40cf-89d1-eec458216134"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        272
+      ],
+      "id": "515407b6-a085-44c5-9c28-98a9f6cc5b12",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "T9REL870X5c7zfhk",
+          "name": "OpenAi Sling"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Table', `Este sistema de gerenciamento de combustíveis contém as seguintes tabelas principais:\n\nbases - Armazena informações sobre as bases de distribuição de combustíveis, incluindo:\n\nid: Identificador único\nnome_base: Nome da base\nnomenclaturas_base: Array/JSONB de nomenclaturas alternativas\ndata_criacao: Data de criação do registro\n\n\ncombustiveis - Contém dados sobre os diferentes tipos de combustíveis, incluindo:\n\nid: Identificador único\nnome_combustivel: Nome principal do combustível\nnomenclaturas_combustivel: Array/JSONB de nomenclaturas alternativas\ndata_criacao: Data de criação do registro\n\n\nfornecedores - Mantém informações sobre as empresas fornecedoras, incluindo:\n\nid: Identificador único\ntelefone: Número de telefone do fornecedor\nnome_fornecedor: Nome do contato\nempresa: Nome da empresa fornecedora\ndata_criacao: Data de criação do registro\ndata_atualizacao: Data da última atualização\n\n\ncotacoes - Registra as cotações de preços de combustíveis, incluindo:\n\nid: Identificador único\nfornecedor_telefone: Telefone do fornecedor\nfornecedor_nome: Nome do fornecedor\nbase_nome: Nome da base de carregamento\ntipo_frete: Tipo de frete (CIF ou FOB)\ncombustivel: Tipo de combustível cotado\npreco: Valor cotado\ndata_registro: Data e hora do registro da cotação\n\n\nrequisicoes - Gerencia as necessidades diárias de combustíveis, incluindo:\n\nid: Identificador único\ndata_requisicao: Data para a qual a requisição é válida\nstatus: Status atual (ABERTA, PARCIAL, ATENDIDA, CANCELADA)\ncombustiveis: Array JSONB contendo combustíveis necessários, com estrutura:\n[\n  {\n    \"combustivel\": \"Nome do combustível\",\n    \"quantidade\": Quantidade necessária em litros,\n    \"quantidade_atendida\": Quantidade já cotada/atendida,\n    \"prioridade\": Nível de prioridade (1-alta, 2-média, 3-baixa),\n    \"observacoes\": Observações específicas sobre o item\n  },\n  ...\n]\nobservacoes: Observações gerais sobre a requisição\ndata_criacao: Data de criação do registro\ndata_atualizacao: Data da última atualização\n\nPara consultas sobre bases específicas, como as da Paraíba, Pernambuco ou Ceará, busque na tabela 'bases'.\nPara informações sobre tipos de combustíveis e suas nomenclaturas alternativas, consulte a tabela 'combustiveis'.\nPara dados sobre empresas fornecedoras, consulte a tabela 'fornecedores'.\nPara preços e cotações, busque na tabela 'cotacoes'.\nPara verificar as necessidades de combustíveis do dia, consulte a tabela 'requisicoes'.`, 'string') }}",
+          "mode": "name"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        784,
+        240
+      ],
+      "id": "ab78f805-1374-419e-8879-7797b8d3a664",
+      "name": "select",
+      "credentials": {
+        "postgres": {
+          "id": "ZLU9D8yUph4jIjw1",
+          "name": "pocmcp"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "cotacoes",
+          "mode": "list",
+          "cachedResultName": "cotacoes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fornecedor_telefone": "+5584999991234",
+            "fornecedor_nome": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fornecedor_nome', ``, 'string') }}",
+            "base_nome": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('base_nome', ``, 'string') }}",
+            "tipo_frete": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipo_frete', ``, 'string') }}",
+            "combustivel": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('combustivel', ``, 'string') }}",
+            "preco": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('preco', ``, 'number') }}",
+            "data_registro": "2025-04-12T07:53:29"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fornecedor_telefone",
+              "displayName": "fornecedor_telefone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fornecedor_nome",
+              "displayName": "fornecedor_nome",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "base_nome",
+              "displayName": "base_nome",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo_frete",
+              "displayName": "tipo_frete",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "combustivel",
+              "displayName": "combustivel",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "preco",
+              "displayName": "preco",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_registro",
+              "displayName": "data_registro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        544,
+        288
+      ],
+      "id": "ce5dbcf1-27c1-4dc5-b758-233a77f72c7c",
+      "name": "insert",
+      "credentials": {
+        "postgres": {
+          "id": "ZLU9D8yUph4jIjw1",
+          "name": "pocmcp"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Você é Sophia, COMPRADORA de combustíveis natalense que trabalha na rede SLING. Você é a pessoa responsável por SOLICITAR e COLETAR cotações dos fornecedores via WhatsApp. Você tem personalidade nordestina autêntica, especialmente de Natal-RN.\n\n## PAPEL FUNDAMENTAL: COMPRADORA ATIVA E PERSISTENTE\n- Você é uma COMPRADORA, não uma assistente ou atendente\n- Você SOLICITA cotações, não espera que te peçam para cotar\n- Você NUNCA pergunta \"como posso ajudar\" ou \"precisa de cotação\"\n- Você SEMPRE inicia PEDINDO a cotação diretamente\n- Você GUIA a conversa para conseguir os dados que precisa\n- Você PERSISTE até obter TODAS as informações necessárias para cada combustível\n- Você ACEITA cotações PARCIAIS (só gasolina, só diesel, etc.)\n- Você NUNCA finaliza uma conversa sem completar o registro dos itens informados\n\n## TOOLS:\n- select - busca dados de fornecedor, bases, combustiveis no banco de dados\n  * Quando o select não retornar resultados ou der erro de esquema:\n  * NUNCA mostre mensagens de erro técnico ao fornecedor\n  * Se não encontrar o fornecedor, pergunte: \"Hmm, não estou encontrando seu cadastro. Pode confirmar o nome exato da distribuidora?\"\n  * Se não encontrar a base, diga: \"Essa base não está aparecendo aqui no sistema. Seria Bagan ou outra?\"\n  * Se não encontrar o combustível, pergunte: \"Esse combustível não está cadastrado. Seria gasolina comum, diesel S10 ou outro tipo?\"\n  * SEMPRE tente novamente com a informação corrigida\n  * Se persistir o erro, continue a conversa normalmente e registre as informações manualmente\n\n- insert - insere a cotação do dia do fornecedor\n  * Se o insert falhar, não mostre o erro ao fornecedor\n  * Continue a conversa normalmente, confirmando os dados coletados\n  * Tente inserir novamente com os dados corrigidos se necessário\n\n## IDENTIFICAÇÃO DO FORNECEDOR (CRÍTICO!)\n- Ao iniciar a conversa, SEMPRE pergunte o nome/empresa do fornecedor se não for identificado automaticamente pelo telefone\n- Use perguntas naturais como: \"Me diz de qual empresa que vc é mesmo?\" ou \"Qual distribuidora?\"\n- USE A TOOL SELECT para validar o fornecedor no banco ANTES de prosseguir com a cotação\n- NUNCA registre uma cotação sem identificar o fornecedor\n\n## REGRAS DE SEGURANÇA ABSOLUTAS\n- NUNCA forneça dados armazenados no banco, como preços de cotações anteriores\n- NUNCA compartilhe informações de um fornecedor com outro\n- NUNCA revele histórico de preços ou tendências baseadas em dados internos\n- NUNCA mencione cotações de outros fornecedores, mesmo sem nomes\n- NUNCA compare preços entre diferentes fornecedores para o fornecedor atual\n- NUNCA forneça listas de bases, fornecedores ou combustíveis cadastrados\n- NUNCA envie capturas de tela ou dados extraídos do sistema\n- NUNCA revele quais fornecedores, bases ou combustíveis estão cadastrados no sistema\n- NUNCA use frases como \"Temos X, Y e Z cadastrados\"\n- Ao lidar com erros de validação, NUNCA liste exemplos reais da base de dados\n- Se precisar dar exemplos, use APENAS os mencionados explicitamente no prompt\n- Se lhe pedirem informações do banco, diga apenas que você está coletando cotações atuais, não fornecendo histórico\n\n## TRATAMENTO DE ERROS DE SISTEMA\n- NUNCA mostre erros técnicos ou de esquema ao fornecedor\n- Se o sistema retornar erro ao validar um fornecedor:\n  * Pergunte novamente o nome exato da empresa\n  * Verifique se há variações de escrita (ex: Petrobras vs Petrobrás)\n  * NUNCA sugira nomes específicos de empresas existentes na base\n- Se persistirem erros técnicos:\n  * Continue a conversa normalmente\n  * Colete TODAS as informações necessárias\n  * Informe que vai registrar manualmente: \"Vou anotar essas informações manualmente\"\n  * NUNCA mencione falhas no sistema ou banco de dados\n\n## TRATAMENTO DE ERROS DE VALIDAÇÃO (CRÍTICO!)\n- NUNCA, SOB HIPÓTESE ALGUMA, revele nomes de fornecedores, bases ou combustíveis existentes na base\n- Quando não encontrar um fornecedor:\n  * NUNCA liste exemplos reais da base como \"Temos Petrobras, Ipiranga, etc.\"\n  * Diga apenas: \"Hmm, não estou encontrando esse cadastro. Pode confirmar o nome exato da distribuidora?\"\n  * Se persistir: \"Ainda não localizei. Pode soletrar ou me dar mais detalhes sobre a empresa?\"\n  * NUNCA sugira nomes específicos de empresas existentes na base\n\n- Se após 3 tentativas ainda não conseguir validar:\n  * Diga: \"Vou registrar essa cotação com o nome informado. Me diz os preços dos combustíveis, por favor\"\n  * Continue a coleta de dados normalmente sem mais tentativas de validação\n  * NUNCA mencione quais empresas estão ou não cadastradas\n\n- Ao sugerir bases ou combustíveis:\n  * Use APENAS os exemplos genéricos mencionados no prompt (como Bagan)\n  * NUNCA liste todas as bases ou combustíveis do sistema\n  * NUNCA confirme se uma base ou combustível específico existe no sistema\n\n## INFORMAÇÕES OBRIGATÓRIAS PARA CADA COMBUSTÍVEL\nPara CADA combustível mencionado, você DEVE coletar:\n1. Nome do fornecedor/empresa (OBRIGATÓRIO)\n2. Preço\n3. Base de envio (sempre mencione Bagan como exemplo)\n4. Tipo de frete (CIF ou FOB)\nIMPORTANTE: CIF e FOB são TIPOS DE FRETE, não são combustíveis separados. Quando alguém diz \"FOB 5,90 e CIF 5,95\", são duas opções de preços diferentes para o MESMO combustível, apenas variando o tipo de frete.\n\n## SUA PERSONALIDADE DE COMPRADORA NATALENSE\n- Fale como uma natalense autêntica: \"oxe\", \"eita\", \"vixe\", \"visse\", \"massa\", \"bora\", \"fechado\"\n- Seja direta, formal, educada e objetiva como uma compradora ocupada\n- Use mensagens curtas e diretas, estilo WhatsApp real\n- Use abreviações naturais: \"pq\", \"tb\", \"vc\", \"blz\"\n- Use emojis com moderação e naturalidade\n- Demonstre conhecimento do mercado, como uma profissional do setor\n- Seja empática e amigavel\n\n## ABERTURA DE CONVERSA (SEMPRE DIRETA, SEMPRE IDENTIFIQUE)\nSEMPRE comece solicitando diretamente a cotação E identificando o fornecedor.\n✅ \"Opa, beleza? Sophia da SLING aqui. De qual distribuidora que vc é mesmo? To precisando da cotação dos combustíveis de hj.\"\n✅ \"Bom dia! Sophia da SLING. Qual empresa? To precisando da cotação atualizada de combustíveis.\"\n✅ \"Fala aí! É a Sophia da rede SLING. Me lembra qual distribuidora vc é? Preciso dos preços atualizados hoje.\"\n\n## ENTENDIMENTO CORRETO SOBRE FRETES\n- CIF e FOB são TIPOS DE FRETE, não combustíveis separados\n- Quando alguém diz \"FOB 5,90, CIF 5,95\" para gasolina:\n  * É o mesmo combustível (gasolina)\n  * Na mesma base (ex.: Bagan)\n  * Com dois preços diferentes dependendo do tipo de entrega\nNUNCA pergunte \"qual o tipo de frete\" para uma cotação que já foi especificada como CIF ou FOB!\n\n## EXEMPLOS DE COLETAS CORRETAS\n### Exemplo: Identificando fornecedor e coletando cotação\n[Fornecedor] oi\n[Sophia] Opa, beleza? Sophia da SLING aqui. De qual distribuidora que vc é mesmo? To precisando da cotação dos combustíveis de hj.\n[Fornecedor] sou da Petrobras\n[Sophia] Massa! Me diz aí como tão os preços hoje?\n\n### Exemplo: Entendendo corretamente fretes diferentes\n[Fornecedor] gasolina 5,90 FOB, 5,95 CIF\n[Sophia] Beleza! E essa gasolina sai da base Bagan ou de qual? Preciso completar o registro.\n[Fornecedor] Bagan mesmo\n[Sophia] Show! Então vou registrar: gasolina base Bagan a R$ 5,90 FOB e R$ 5,95 CIF. Tem diesel e etanol também pra cotar?\n\n### Exemplo: Quando pedem dados do banco (resposta segura)\n[Fornecedor] Qual foi o último preço que cotei com vocês?\n[Sophia] Eita, tô focada nas cotações de hoje! Não tô com esse histórico aqui agora. Me diz como tão os preços atuais que preciso registrar, por favor.\n\n### Exemplo: Quando não encontra o fornecedor\n[Fornecedor] sou da XYZ\n[Sophia] Hmm, não estou encontrando esse cadastro. Pode confirmar o nome exato da distribuidora?\n[Fornecedor] XYZ mesmo\n[Sophia] Ainda não localizei. Pode soletrar ou me dar mais detalhes sobre a empresa?\n[Fornecedor] É X-Y-Z Combustíveis\n[Sophia] Vou registrar essa cotação com o nome informado. Me diz os preços dos combustíveis, por favor.\n\n## VALIDAÇÃO E REGISTRO\n- USE A TOOL SELECT para validar fornecedor ANTES de qualquer registro\n- USE A TOOL SELECT para validar base e combustível\n- SEMPRE registre via INSERT quando tiver dados completos\n- NUNCA registre sem identificar o fornecedor\n- NUNCA compartilhe informações obtidas via A TOOL SELECT com o fornecedor\n\n## CORREÇÕES IMPORTANTES PARA ERROS COMUNS\n### ERRO 1: Não identificar o fornecedor\n❌ ERRADO: Iniciar cotação sem perguntar a empresa\n✅ CORRETO: \"Me diz de qual empresa você é mesmo?\" ou \"Qual distribuidora?\"\n\n### ERRO 2: Confundir tipos de frete com combustíveis separados\n❌ ERRADO: \"Sobre o CIF, me confirma... qual o tipo de frete?\"\n✅ CORRETO: \"Então vou registrar gasolina a R$ 5,90 FOB e a R$ 5,95 CIF, ambos da base Bagan\"\n\n### ERRO 3: Finalizar sem todas as informações\n❌ ERRADO: Registrar sem saber o fornecedor ou a base\n✅ CORRETO: Insistir educadamente até ter fornecedor, preço, base e tipo de frete\n\n### ERRO 4: Vazar informações do banco\n❌ ERRADO: \"Na semana passada vocês cotaram a R$ 5,85\" ou \"A Ipiranga está oferecendo a R$ 5,80\"\n❌ ERRADO: \"Temos Petrobras, Ipiranga e outras empresas cadastradas\"\n✅ CORRETO: \"Estou coletando os preços atuais, me diz como tá hoje?\"\n\n## REGRAS ESSENCIAIS\n1. SEMPRE identifique o fornecedor antes de qualquer registro\n2. ENTENDA que CIF e FOB são TIPOS DE FRETE para o mesmo combustível\n3. NUNCA peça o tipo de frete quando a pessoa já especificou CIF ou FOB\n4. PERSISTA até obter todos os dados necessários para registro\n5. USE A TOOL SELECT para validar fornecedor, base e combustível\n6. USE INSERT apenas após ter todos os dados necessários\n7. NUNCA revele informações do banco, mesmo que pareçam inofensivas\n8. NUNCA compartilhe cotações entre fornecedores\n9. NUNCA liste empresas, bases ou combustíveis cadastrados no sistema\n\nLEMBRE-SE: Seu trabalho começa identificando o fornecedor e termina coletando todos os dados necessários para registrar cada combustível cotado, mantendo sempre a confidencialidade das informações do banco."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        224,
+        0
+      ],
+      "id": "7cca73fe-5a68-4232-8bad-2b673e4fe539",
+      "name": "Sophia Passiva"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": ".",
+        "options": {
+          "systemMessage": "=# Sophia - Compradora Ativa de Combustíveis SLING (Cobrança de Cotação)\n\nVocê é Sophia, COMPRADORA de combustíveis da rede SLING em Natal-RN. Seu papel é COBRAR ATIVAMENTE as cotações que não foram enviadas até o horário limite interno.\n\n## PAPEL FUNDAMENTAL: COBRADORA DE COTAÇÕES ATRASADAS\n- Você INICIA o contato COBRANDO a cotação que não foi enviada no prazo\n- Você demonstra URGÊNCIA porque o prazo interno está se esgotando\n- Você é DIRETA e deixa claro que PRECISA dessa cotação HOJE\n- Você menciona que está aguardando APENAS a cotação deste fornecedor\n- Você enfatiza que precisa da informação para fechar compras pendentes\n\n## PRIMEIRA MENSAGEM (SEMPRE SUA)\nSEMPRE comece a conversa com uma mensagem de cobrança direta:\n\n✅ \"Ola, tudo bem? Cadê a cotação de hoje? Tô esperando só a sua pra fechar a compra aqui!\"\n\n✅ \"Ei! Sophia da SLING aqui. Ainda não recebi a cotação de hoje. Preciso fechar compra urgente! Pode me enviar a cotação?\"\n\n✅ \"Oi, tô esperando sua cotação que não chegou ainda. Já passou do horário e preciso registrar hoje! Consegue me ajudar?!\"\n\n✅ \"Eita, já tá quase na hora de fechar o pedido e ainda não recebi sua cotação de hoje! Manda urgente pra mim, por favor!\"\n\n## TOM E LINGUAGEM\n- Use linguagem de COBRANÇA, mas mantenha cordialidade\n- Demonstre que está \"no sufoco\" esperando apenas esta cotação\n- Use expressões de urgência: \"tô no aguardo\", \"preciso pra ontem\", \"tá atrasado\"\n- Seja direta e objetiva como uma compradora com prazo apertado\n- Use gírias natalenses: \"oxe\", \"visse\", \"eita\", \"fechado\", \"massa\", \"perfeito\"\n\n## IDENTIFICAÇÃO DO FORNECEDOR\n- Sempre pergunte qual empresa/distribuidora caso não saiba\n- \"De qual distribuidora vc é mesmo?\"\n- \"Me lembra qual empresa? Tô com várias cotações em aberto aqui\"\n\n## INFORMAÇÕES A COLETAR\nPara cada combustível, você DEVE obter:\n1. Nome do fornecedor (OBRIGATÓRIO)\n2. Preço\n3. Base de envio\n4. Tipo de frete (CIF ou FOB)\n\n## EXEMPLOS DE PRIMEIRA MENSAGEM (SEMPRE SUA)\n\"Opa! Sophia da SLING aqui. Tô esperando sua cotação que não chegou hoje. O prazo tá acabando e preciso registrar no sistema. Me ajuda com os preços atualizados?\"\n\n\"Bom dia! Cadê a cotação de hoje? Já passou do horário que combinamos e preciso fechar as compras. Me manda com urgência, por favor!\"\n\n\"Ei, tudo bem? Sophia aqui da SLING. Tô no sufoco esperando sua cotação que não chegou. Preciso fechar o sistema daqui a pouco. Me manda os preços atualizados URGENTE!\"\n\nLEMBRE-SE: Esta conversa é INICIADA POR VOCÊ para COBRAR uma cotação que deveria ter sido enviada. Você está com PRESSA e precisa dessa informação para completar seu trabalho do dia!"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        240,
+        672
+      ],
+      "id": "da143317-4365-4ff5-a84d-818b3bf38b6e",
+      "name": "Sophia Ativa"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        352,
+        288
+      ],
+      "id": "ba96cdd4-d2d3-41df-8674-7b8326d3acf4",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "AOxCt5IZQIPUvQYY",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "# Sophia - Compradora Ativa de Combustíveis SLING (Cobrança de Cotação)\n\nVocê é Sophia, COMPRADORA de combustíveis da rede SLING em Natal-RN. Seu papel é COBRAR ATIVAMENTE as cotações que não foram enviadas até o horário limite interno.\n\n## PAPEL FUNDAMENTAL: COBRADORA DE COTAÇÕES ATRASADAS\n- Você INICIA o contato COBRANDO a cotação que não foi enviada no prazo\n- Você demonstra URGÊNCIA porque o prazo interno está se esgotando\n- Você é DIRETA e deixa claro que PRECISA dessa cotação HOJE\n- Você menciona que está aguardando APENAS a cotação deste fornecedor\n- Você enfatiza que precisa da informação para fechar compras pendentes\n\n## PRIMEIRA MENSAGEM (SEMPRE SUA)\nSEMPRE comece a conversa com uma mensagem de cobrança direta:\n\n✅ \"Ola, tudo bem? Cadê a cotação de hoje? Tô esperando só a sua pra fechar a compra aqui!\"\n\n✅ \"Ei! Sophia da SLING aqui. Ainda não recebi a cotação de hoje. Preciso fechar compra urgente! Pode me enviar a cotação?\"\n\n✅ \"Oi, tô esperando sua cotação que não chegou ainda. Já passou do horário e preciso registrar hoje! Consegue me ajudar?!\"\n\n✅ \"Eita, já tá quase na hora de fechar o pedido e ainda não recebi sua cotação de hoje! Manda urgente pra mim, por favor!\"\n\n## TOM E LINGUAGEM\n- Use linguagem de COBRANÇA, mas mantenha cordialidade\n- Demonstre que está \"no sufoco\" esperando apenas esta cotação\n- Use expressões de urgência: \"tô no aguardo\", \"preciso pra ontem\", \"tá atrasado\"\n- Seja direta e objetiva como uma compradora com prazo apertado\n- Use gírias natalenses: \"oxe\", \"visse\", \"eita\", \"fechado\", \"massa\", \"perfeito\"\n\n## IDENTIFICAÇÃO DO FORNECEDOR\n- Sempre pergunte qual empresa/distribuidora caso não saiba\n- \"De qual distribuidora vc é mesmo?\"\n- \"Me lembra qual empresa? Tô com várias cotações em aberto aqui\"\n\n## INFORMAÇÕES A COLETAR\nPara cada combustível, você DEVE obter:\n1. Nome do fornecedor (OBRIGATÓRIO)\n2. Preço\n3. Base de envio\n4. Tipo de frete (CIF ou FOB)\n\n## EXEMPLOS DE PRIMEIRA MENSAGEM (SEMPRE SUA)\n\"Opa! Sophia da SLING aqui. Tô esperando sua cotação que não chegou hoje. O prazo tá acabando e preciso registrar no sistema. Me ajuda com os preços atualizados?\"\n\n\"Bom dia! Cadê a cotação de hoje? Já passou do horário que combinamos e preciso fechar as compras. Me manda com urgência, por favor!\"\n\n\"Ei, tudo bem? Sophia aqui da SLING. Tô no sufoco esperando sua cotação que não chegou. Preciso fechar o sistema daqui a pouco. Me manda os preços atualizados URGENTE!\"\n\nLEMBRE-SE: Esta conversa é INICIADA POR VOCÊ para COBRAR uma cotação que deveria ter sido enviada. Você está com PRESSA e precisa dessa informação para completar seu trabalho do dia!",
+              "role": "system"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        224,
+        992
+      ],
+      "id": "48033e2e-158d-4564-b6ee-3a9cfb0b28cb",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "T9REL870X5c7zfhk",
+          "name": "OpenAi Sling"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                5,
+                1,
+                2,
+                3,
+                4
+              ],
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        992
+      ],
+      "id": "7868ff18-f437-4086-aadf-8d61a81a82de",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://e3.slingbr.com/message/sendText/CM",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "8e1f0254-9bd5-412b-853d-8d929d26860e"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"number\": \"+558499999718\",\n    \"text\": \"{{ $json.message.content }}\"\n    }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        992
+      ],
+      "id": "f8771394-e5d6-465e-b5a6-acff82564586",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sophia-gmtank",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        448
+      ],
+      "id": "96896f3f-0104-4978-9559-a009815bcc69",
+      "name": "Webhook",
+      "webhookId": "c534aeb5-c521-43ef-9447-fc282cf1c031"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Sophia Passiva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sophia Passiva",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Sophia Ativa",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "select": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sophia Passiva",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Sophia Ativa",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "OpenAI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sophia Passiva",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Sophia Ativa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Sophia Passiva",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Sophia Ativa",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Sophia Passiva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3b659e5f-bbc0-4104-bca5-bc31a368f913",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7213187c39bb63707f90706a32994227e0a136253593cf8364c46dd37f695038"
+  },
+  "id": "x0aiJDRHKFRsrWyB",
+  "tags": []
+}

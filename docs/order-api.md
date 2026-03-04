@@ -1,3 +1,17 @@
+# API de Pedidos - Documentacao (Legado)
+
+> Status: **LEGADO / PARCIALMENTE DESATUALIZADO**
+>
+> Este arquivo nao reflete 100% do contrato atual em codigo.
+>
+> Documento canonico do fluxo atual:
+> - `docs/flows/fluxo-pedido-combustivel-atual.md`
+>
+> Fontes de verdade de API:
+> - `server/src/routes/orders.js`
+> - `server/src/routes/sophia.js`
+
+---
 # API de Pedidos - Documentação
 
 Esta API permite gerenciar pedidos de abastecimento e sua integração com webhooks para notificações.
@@ -537,3 +551,4 @@ YYYY-MM-DDTHH:MM:SS.sssZ
 ```
 
 Exemplo: `2025-06-28T12:00:00.000Z`
+

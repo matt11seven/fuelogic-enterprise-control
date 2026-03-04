@@ -203,3 +203,40 @@ const sophiaRoutes = require('./routes/sophia.routes');
 // Registrar as rotas da Sophia
 app.use('/api/sophia', sophiaRoutes);
 ```
+
+## Reconstrucao do N8N no Backend Local
+
+O fluxo de `docs/N8N Sophia New.json` foi mapeado para rotas nativas no backend `server/src`.
+
+### Endpoints adicionados
+
+- `POST /api/sophia/webhook/sophia-gmtank` (publico):
+  - Equivalente ao Webhook + Sophia Passiva.
+  - Recebe mensagem, gera resposta da Sophia passiva e pode responder no canal de saida quando `SOPHIA_AUTO_REPLY=true`.
+
+- `POST /api/sophia/chat/passiva` (autenticado):
+  - Chat passivo interno para testes.
+
+- `POST /api/sophia/cobranca/send` (autenticado):
+  - Equivalente ao Schedule Trigger + OpenAI + HTTP Request.
+  - Gera mensagem de cobranca ativa e envia para o numero informado.
+
+- `GET /api/sophia/select/:entity` (autenticado):
+  - Equivalente ao tool `select` (bases, combustiveis, fornecedores).
+
+- `POST /api/sophia/insert/cotacao` (autenticado):
+  - Equivalente ao tool `insert` na tabela `cotacoes`.
+
+- `GET /api/sophia/workflow/summary` (autenticado):
+  - Valida carregamento de prompts do JSON do n8n.
+
+### Variaveis de ambiente
+
+Use as variaveis em `server/.env.example`:
+
+- `SOPHIA_OPENAI_API_KEY`
+- `SOPHIA_MODEL`
+- `SOPHIA_OUTBOUND_URL`
+- `SOPHIA_OUTBOUND_API_KEY`
+- `SOPHIA_INBOUND_WEBHOOK_KEY`
+- `SOPHIA_AUTO_REPLY`

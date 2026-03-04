@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
+import SophiaOps from "./pages/SophiaOps";
+import Pedidos from "./pages/Pedidos";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,16 @@ const App = () => (
                 <Route path="/configuracoes" element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/sophia-ops" element={
+                  <ProtectedRoute>
+                    <SophiaOps />
+                  </ProtectedRoute>
+                } />
+                <Route path="/pedidos" element={
+                  <ProtectedRoute>
+                    <Pedidos />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

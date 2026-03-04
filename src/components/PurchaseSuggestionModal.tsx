@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Calculator, ShoppingCart, AlertCircle, AlertTriangle, CheckCircle, Truck, PlusCircle, CheckSquare, CopyIcon, Brain } from "lucide-react";
-import webhookApi from "@/services/webhook-api";
 import { useConfig } from "@/context/ConfigContext";
 import { getAllTrucks } from "@/services/truck-api";
 import { Truck as TruckType } from "@/types/truck";
@@ -16,9 +15,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import axios from 'axios';
 import { Station } from "@/hooks/use-tank-data";
 import { toast } from "@/hooks/use-toast";
+import ordersApiService from "@/services/orders-api";
+import sophiaOpsApi from "@/services/sophia-ops-api";
 
 // Interface para sugestão de compra para um tanque
 interface TankPurchaseSuggestion {
@@ -50,8 +50,6 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
   const [priorityFilter, setPriorityFilter] = useState<string>("critical");
   const [suggestions, setSuggestions] = useState<TankPurchaseSuggestion[]>([]);
   const [calculatedOrders, setCalculatedOrders] = useState<any[]>([]);
-  // Estado para verificar se existe webhook da IA Sophia
-  const [hasSophiaWebhook, setHasSophiaWebhook] = useState(false);
   // Estado para indicar quando está enviando para a Sophia
   const [isSendingToSophia, setIsSendingToSophia] = useState(false);
   const [totalSuggestedLiters, setTotalSuggestedLiters] = useState<number>(0);
@@ -115,7 +113,7 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
     });
 
     // Filtrar tanques com base na prioridade selecionada
-    let filteredSuggestions = allSuggestions.filter(suggestion => {
+    const filteredSuggestions = allSuggestions.filter(suggestion => {
       if (priorityFilter === "critical") {
         return suggestion.priority === "critical";
       } else if (priorityFilter === "critical_warning") {
@@ -278,7 +276,7 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
     return text;
   };
   
-  // Efeito para verificar se há caminhões cadastrados e webhooks da IA Sophia
+  // Efeito para verificar se há caminhões cadastrados
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -290,10 +288,6 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
             isSelected: false
           }))
         );
-        
-        // Verificar se existe algum webhook da IA Sophia
-        const sophiaWebhooks = await webhookApi.getWebhooksByType('sophia_ai_order');
-        setHasSophiaWebhook(sophiaWebhooks.length > 0);
       } catch (error) {
         console.error("Erro ao buscar dados iniciais:", error);
         toast({
@@ -406,21 +400,37 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
     
     setIsSendingToSophia(true);
     try {
-      // Buscar webhooks da IA Sophia
-      const sophiaWebhooks = await webhookApi.getWebhooksByType('sophia_ai_order');
-      
-      if (sophiaWebhooks.length === 0) {
+      let ordersSaved = false;
+
+      // Gerar group_id para este batch de pedidos
+      const groupId = crypto.randomUUID();
+
+      // Salvar pedidos no banco antes de enviar para Sophia
+      try {
+        const ordersToSave = calculatedOrders.map(order => ({
+          station_id: order.stationId,
+          station_name: order.stationName,
+          tank_id: order.tankId,
+          product_type: order.tankType,
+          quantity: order.suggestedFill,
+        }));
+        await ordersApiService.createBulkOrders(groupId, ordersToSave);
+        ordersSaved = true;
+      } catch (saveError) {
+        console.error('Erro ao salvar pedidos:', saveError);
+        const message = saveError instanceof Error ? saveError.message : 'Falha ao salvar pedidos';
         toast({
-          title: "Webhook não encontrado",
-          description: "Não há webhooks da IA Sophia cadastrados.",
+          title: "Erro ao salvar pedidos",
+          description: message,
           variant: "destructive",
         });
         return;
       }
-      
+
       // Preparar os dados para envio
       const payload = {
         eventType: 'sophia_ai_order',
+        group_id: groupId,
         timestamp: new Date().toISOString(),
         postos: Object.entries(calculatedOrders.reduce((acc, order) => {
           // Agrupar por estação
@@ -445,55 +455,22 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
           return acc;
         }, {})
       };
+
+      await sophiaOpsApi.processOrderBatch(payload);
       
-      // Enviar para cada webhook da IA Sophia
-      for (const webhook of sophiaWebhooks) {
-        try {
-          if (webhook && webhook.id) {
-            // Obter o token de autenticação de forma segura
-            let token = '';
-            
-            // Primeiro tentar obter do novo formato (fuelogic_user)
-            const storedUser = localStorage.getItem('fuelogic_user');
-            if (storedUser) {
-              try {
-                const user = JSON.parse(storedUser);
-                if (user && user.token) {
-                  token = user.token;
-                }
-              } catch (error) {
-                console.error('Erro ao analisar usuário do localStorage', error);
-              }
-            }
-            
-            // Se não encontrou no novo formato, tentar no formato antigo
-            if (!token) {
-              token = localStorage.getItem('token') || '';
-            }
-            
-            // Base URL da API - tratando corretamente o prefixo /api
-            let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-            
-            // Remover /api do final da baseUrl se existir para evitar duplicação
-            if (baseUrl.endsWith('/api')) {
-              baseUrl = baseUrl.slice(0, -4); // Remove os últimos 4 caracteres ('/api')
-            }
-            
-            // Usar o endpoint /send com o payload real - caminho correto sem duplicação
-            await axios.post(`${baseUrl}/api/webhooks/${webhook.id}/send`, payload, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`Enviando payload real para webhook ${webhook.name}:`, payload);
-            }
-          }
-        } catch (error) {
-          console.error(`Erro ao enviar para webhook ${webhook.name}:`, error);
-        }
+      if (!ordersSaved) {
+        toast({
+          title: "Lote não persistido",
+          description: "Pedido não foi salvo no banco. Envio cancelado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        await ordersApiService.markGroupSophiaSent(groupId);
+      } catch (markError) {
+        console.error('Falha ao marcar lote como enviado para Sophia:', markError);
       }
       
       toast({
@@ -702,9 +679,9 @@ export default function PurchaseSuggestionModal({ stations }: PurchaseSuggestion
             </Button>
             <Button 
               onClick={handleSendToSophia} 
-              disabled={calculatedOrders.length === 0 || !hasSophiaWebhook || isSendingToSophia}
+              disabled={calculatedOrders.length === 0 || isSendingToSophia}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              title={!hasSophiaWebhook ? "Webhook da IA Sophia não configurado" : "Enviar para a IA Sophia"}
+              title="Enviar para a IA Sophia"
             >
               <Brain className="w-4 h-4 mr-2" />
               {isSendingToSophia ? "Enviando..." : "Enviar para Sophia"}

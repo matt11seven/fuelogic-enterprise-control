@@ -1,22 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { TankData } from '../types/api';
-import { fetchTankData, groupTanksByStation, getProductCode } from '../services/api';
+import { fetchTankData, getProductCode } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react'; // Adicionado import de useEffect
+import { useEffect, useState } from 'react';
+import { getAllPostos, Posto } from '../services/stations-api';
+import { getGMSyncStatus, getLatestGMMedicoes } from '../services/gasmobile-api';
 
 export interface Tank {
   id: string;
   code: string;
   type: string;
-  name: string;      // Nome do tanque
-  product: string;   // Tipo de combust√≠vel/produto armazenado
+  name: string;
+  product: string;
   current: number;
   capacity: number;
   empty: number;
   waterAmount: number;
   temperature: number;
   date: string;
-  apiData?: TankData; // Dados completos da API para uso na visualiza√ß√£o expandida
+  apiData?: TankData;
 }
 
 export interface Station {
@@ -26,104 +28,196 @@ export interface Station {
   tanks: Tank[];
 }
 
+export interface TankDataAlert {
+  level: 'warning' | 'error';
+  title: string;
+  message: string;
+}
+
 export function useTankData() {
   const { apiKey } = useAuth();
-  
-  // Nome da chave para armazenamento no localStorage
   const STORAGE_KEY = 'fuelogic_station_data';
-  
-  // Cache time aumentado para garantir que dados offline sejam mantidos
+  const [dataAlert, setDataAlert] = useState<TankDataAlert | null>(null);
+
   const result = useQuery({
     queryKey: ['tanks', apiKey],
     queryFn: async () => {
+      const postos = await getAllPostos().catch(() => [] as Posto[]);
+
+      const [localMedicoesResult, syncStatusResult] = await Promise.all([
+        getLatestGMMedicoes().catch(() => null),
+        getGMSyncStatus().catch(() => null),
+      ]);
+
+      const localRows = localMedicoesResult?.rows || [];
+      const hasLocalData = localRows.length > 0;
+
+      const intervalMs = Number(syncStatusResult?.interval_ms || 20 * 60 * 1000);
+      const staleThresholdMs = Number(syncStatusResult?.stale_threshold_ms || intervalMs * 2);
+
+      const latestLocalIso = localMedicoesResult?.latest_measured_at || null;
+      const latestLocalTs = latestLocalIso ? new Date(latestLocalIso).getTime() : 0;
+      const nowTs = Date.now();
+      const isLocalStale = !latestLocalTs || (nowTs - latestLocalTs > staleThresholdMs);
+
+      const staleMinutes = latestLocalTs
+        ? Math.floor((nowTs - latestLocalTs) / 60000)
+        : null;
+      const staleLimitMinutes = Math.floor(staleThresholdMs / 60000);
+
+      const fetchFromApiWithReason = async (reasonTitle: string, reasonMessage: string) => {
+        try {
+          const tankData = await fetchTankData(apiKey);
+          localStorage.setItem('fuelogic_raw_tank_data', JSON.stringify(tankData));
+          setDataAlert({
+            level: 'warning',
+            title: reasonTitle,
+            message: `${reasonMessage} Exibindo mediÁıes da API em tempo real.`,
+          });
+          return { tankData, postos };
+        } catch (apiError) {
+          const apiMessage = apiError instanceof Error ? apiError.message : 'falha desconhecida';
+
+          if (hasLocalData) {
+            setDataAlert({
+              level: 'error',
+              title: 'Falha na atualizaÁ„o em tempo real',
+              message: `${reasonMessage} Falha ao consultar API (${apiMessage}). Exibindo ˙ltimos dados do banco.`,
+            });
+            return { tankData: localRows, postos };
+          }
+
+          const savedData = localStorage.getItem('fuelogic_raw_tank_data');
+          if (savedData) {
+            setDataAlert({
+              level: 'error',
+              title: 'Sem dados atualizados disponÌveis',
+              message: `Banco sem dados v·lidos e API indisponÌvel (${apiMessage}). Exibindo cache local.`,
+            });
+            return { tankData: JSON.parse(savedData) as TankData[], postos };
+          }
+
+          throw apiError;
+        }
+      };
+
+      // Banco-first: se temos dados locais e est„o atualizados, usa banco.
+      if (hasLocalData && !isLocalStale) {
+        setDataAlert(null);
+        localStorage.setItem('fuelogic_raw_tank_data', JSON.stringify(localRows));
+        return { tankData: localRows, postos };
+      }
+
+      // Banco desatualizado: tenta API e alerta em amarelo quando conseguir.
+      if (hasLocalData && isLocalStale) {
+        const reason = latestLocalTs
+          ? `Banco desatualizado (${staleMinutes} min sem nova mediÁ„o; limite ${staleLimitMinutes} min).`
+          : 'Banco sem timestamp v·lido de mediÁ„o.';
+        return fetchFromApiWithReason('Dados locais desatualizados', reason);
+      }
+
+      // Banco sem mediÁıes: tenta API e alerta em amarelo quando conseguir.
+      if (!hasLocalData) {
+        return fetchFromApiWithReason(
+          'Banco sem mediÁıes',
+          'Nenhuma mediÁ„o encontrada no banco local.',
+        );
+      }
+
+      // Fallback defensivo.
       try {
-        // Tentar buscar dados da API
-        const data = await fetchTankData(apiKey);
-        
-        // Salvar os dados brutos da API no localStorage
-        localStorage.setItem('fuelogic_raw_tank_data', JSON.stringify(data));
-        
-        return data;
+        const tankData = await fetchTankData(apiKey);
+        localStorage.setItem('fuelogic_raw_tank_data', JSON.stringify(tankData));
+        setDataAlert(null);
+        return { tankData, postos };
       } catch (error) {
-        console.error('Erro ao buscar dados da API:', error);
-        
-        // Em caso de erro, tentar recuperar os dados do localStorage
         const savedData = localStorage.getItem('fuelogic_raw_tank_data');
         if (savedData) {
-          console.log('Usando dados em cache do localStorage');
-          return JSON.parse(savedData);
+          setDataAlert({
+            level: 'error',
+            title: 'Falha na leitura de dados',
+            message: `Banco e API indisponÌveis. Exibindo cache local. Motivo: ${(error as Error).message}`,
+          });
+          return { tankData: JSON.parse(savedData) as TankData[], postos };
         }
-        
-        // Se n√£o houver dados salvos, propaga o erro
         throw error;
       }
     },
-    enabled: !!apiKey, // S√≥ executa a query se tiver uma API key
-    select: (data: TankData[]): Station[] => {
-      // Agrupar tanques por unidade (posto)
-      const tankGroups = groupTanksByStation(data);
+    enabled: !!apiKey,
+    select: ({ tankData, postos }: { tankData: TankData[]; postos: Posto[] }): Station[] => {
+      const postosPorUnidade = new Map<string, Posto>();
+      for (const posto of postos) {
+        const unidadeKey = String(posto.id_unidade || '').trim();
+        if (unidadeKey) {
+          postosPorUnidade.set(unidadeKey, posto);
+        }
+      }
 
-      // Converter para o formato esperado pelos componentes
-      const stations = Object.entries(tankGroups).map(([unidadeNome, tanques], index) => {
+      const groupedByUnidadeId = tankData.reduce<Record<string, TankData[]>>((acc, tank) => {
+        const key = String(tank.IdUnidade || tank.Unidade || tank.Id);
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(tank);
+        return acc;
+      }, {});
+
+      const stations = Object.values(groupedByUnidadeId).map((tanques, index) => {
         const firstTank = tanques[0];
-        
-        // Ordenar tanques por n√∫mero dentro de cada esta√ß√£o
         const sortedTanks = tanques.sort((a, b) => (a.Tanque || 0) - (b.Tanque || 0));
-        
+        const unidadeNome = firstTank.Unidade;
+        const postoDoBanco = postosPorUnidade.get(String(firstTank.IdUnidade));
+        const nomeBanco = (postoDoBanco?.nome || '').trim();
+        const nomeFallback = firstTank.Cliente ? `${firstTank.Cliente} - ${unidadeNome}` : unidadeNome;
+        const nomeResolvido = nomeBanco || nomeFallback;
+
         return {
           id: `station-${firstTank.IdUnidade || index}`,
-          name: firstTank.Cliente ? `${firstTank.Cliente} - ${unidadeNome}` : unidadeNome,
-          address: `Unidade ${unidadeNome}`,
-          tanks: sortedTanks.map(tank => ({
+          name: nomeResolvido,
+          address: `Unidade ${nomeResolvido}`,
+          tanks: sortedTanks.map((tank) => ({
             id: `tank-${tank.Id}`,
             code: getProductCode(tank.Produto),
             type: tank.Produto.trim(),
-            name: `Tanque ${tank.Tanque || ''}`.trim(), // Nome do tanque baseado no n√∫mero
-            product: tank.Produto.trim(),              // Nome do produto/combust√≠vel
+            name: `Tanque ${tank.Tanque || ''}`.trim(),
+            product: tank.Produto.trim(),
             current: tank.QuantidadeAtual,
             capacity: tank.CapacidadeDoTanque,
             empty: tank.QuantidadeVazia,
             waterAmount: tank.QuantidadeDeAgua,
             temperature: tank.Temperatura,
             date: tank.DataMedicao,
-            apiData: tank // Incluir dados completos da API para cada tanque
-          }))
+            apiData: {
+              ...tank,
+              Unidade: nomeResolvido,
+            },
+          })),
         };
       });
-      
-      // Salvar os dados formatados no localStorage
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stations));
-      
       return stations;
     },
-    // Refetch a cada 5 minutos
-    refetchInterval: 5 * 60 * 1000,
-    // Usar dados em cache se estiverem dispon√≠veis
-    staleTime: 60 * 1000,
-    // Manter dados em cache por 1 dia mesmo ap√≥s browser refresh
+    refetchInterval: 20 * 60 * 1000,
+    staleTime: 20 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
-    // Usar dados em cache durante a refetch para melhor experi√™ncia offline
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    retry: 3
+    retry: 3,
   });
-  
-  // Ao montar o componente, verificar se temos dados no localStorage
+
   useEffect(() => {
-    // Se a query falhou e n√£o temos dados retornados, tentar recuperar do localStorage
     if (result.isError || (!result.data && !result.isFetching)) {
       try {
         const savedData = localStorage.getItem(STORAGE_KEY);
         if (savedData) {
-          console.log('Recuperando dados do localStorage ap√≥s erro');
-          // N√£o podemos atualizar o estado do React Query diretamente,
-          // mas podemos notificar o usu√°rio que estamos usando dados em cache
+          console.log('Recuperando dados do localStorage apos erro');
         }
       } catch (e) {
         console.error('Erro ao ler dados do localStorage:', e);
       }
     }
   }, [result.isError]);
-  
-  return result;
+
+  return { ...result, dataAlert };
 }

@@ -1,28 +1,36 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import TruckManager from "@/components/trucks/TruckManager";
 import { useNavigate } from "react-router-dom";
-import { 
-  Settings, 
-  TruckIcon, 
-  Building2, 
-  Clock, 
-  ShieldAlert, 
-  Webhook, 
-  Cpu, 
+import {
+  Settings,
+  TruckIcon,
+  Building2,
+  Clock,
+  ShieldAlert,
+  Webhook,
+  Cpu,
   PackageOpen,
   BarChart4,
   ArrowLeft,
-  Users
+  Users,
+  Droplet,
+  Factory,
+  DatabaseZap
 } from "lucide-react";
 
 import ThresholdConfiguration from "@/components/configuration/ThresholdConfiguration";
+import SophiaConfiguration from "@/components/configuration/SophiaConfiguration";
 
 import PeopleManager from "@/components/people/PeopleManager";
 import WebhookManager from "@/components/webhooks/WebhookManager";
+import StationsManager from "@/components/stations/StationsManager";
+import FuelsManager from "@/components/fuels/FuelsManager";
+import SuppliersManager from "@/components/suppliers/SuppliersManager";
+import GasMobileSync from "@/components/gasmobile/GasMobileSync";
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("order-rules");
@@ -57,7 +65,7 @@ const SettingsPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="order-rules" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-6 mb-8">
+            <TabsList className="grid grid-cols-9 mb-8">
               <TabsTrigger value="order-rules" className="flex items-center">
                 <PackageOpen className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Regras de Pedido</span>
@@ -67,6 +75,16 @@ const SettingsPage = () => {
                 <Building2 className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Unidades e Postos</span>
                 <span className="sm:hidden">Postos</span>
+              </TabsTrigger>
+              <TabsTrigger value="fuels" className="flex items-center">
+                <Droplet className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Combustíveis</span>
+                <span className="sm:hidden">Combust.</span>
+              </TabsTrigger>
+              <TabsTrigger value="suppliers" className="flex items-center">
+                <Factory className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Fornecedores</span>
+                <span className="sm:hidden">Fornec.</span>
               </TabsTrigger>
               <TabsTrigger value="logistics" className="flex items-center">
                 <TruckIcon className="w-4 h-4 mr-2" />
@@ -93,7 +111,23 @@ const SettingsPage = () => {
             {/* Conteúdo da aba Regras de Pedido */}
             <TabsContent value="order-rules" className="space-y-6">
               <h2 className="text-xl font-semibold mb-4">Regras de Pedido</h2>
-              
+
+              {/* Sincronização GasMobile */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <DatabaseZap className="w-5 h-5 mr-2 text-emerald-500" />
+                    Importar dados da GasMobile
+                  </CardTitle>
+                  <CardDescription>
+                    Cadastre automaticamente postos, tanques e combustíveis a partir da API GasMobile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <GasMobileSync />
+                </CardContent>
+              </Card>
+
               {/* Componente de configuração de thresholds */}
               <ThresholdConfiguration />
               
@@ -153,14 +187,59 @@ const SettingsPage = () => {
             </TabsContent>
             
             {/* Conteúdo da aba Unidades e Postos */}
-            <TabsContent value="stations">
-              <h2 className="text-xl font-semibold mb-4">Unidades e Postos</h2>
-              <p className="text-slate-400">
-                Funcionalidade em desenvolvimento. Aqui você poderá gerenciar as configurações 
-                relacionadas às unidades e postos de combustível.
-              </p>
+            <TabsContent value="stations" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Building2 className="w-5 h-5 mr-2 text-emerald-500" />
+                    Gerenciamento de Postos e Unidades
+                  </CardTitle>
+                  <CardDescription>
+                    Cadastre e gerencie os postos e unidades de abastecimento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StationsManager />
+                </CardContent>
+              </Card>
             </TabsContent>
-            
+
+            {/* Conteúdo da aba Combustíveis */}
+            <TabsContent value="fuels" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Droplet className="w-5 h-5 mr-2 text-emerald-500" />
+                    Catálogo de Combustíveis
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie os tipos de combustíveis disponíveis no sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FuelsManager />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Conteúdo da aba Fornecedores */}
+            <TabsContent value="suppliers" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Factory className="w-5 h-5 mr-2 text-emerald-500" />
+                    Gerenciamento de Fornecedores
+                  </CardTitle>
+                  <CardDescription>
+                    Cadastre e gerencie os fornecedores de combustível
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SuppliersManager />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Conteúdo da aba Caminhões e Logística */}
             <TabsContent value="logistics" className="space-y-6">
               <h2 className="text-xl font-semibold mb-4">Caminhões e Logística</h2>
@@ -200,12 +279,9 @@ const SettingsPage = () => {
             </TabsContent>
             
             {/* Conteúdo da aba Integrações APIs */}
-            <TabsContent value="integrations">
+            <TabsContent value="integrations" className="space-y-6">
               <h2 className="text-xl font-semibold mb-4">Integrações APIs</h2>
-              <p className="text-slate-400">
-                Funcionalidade em desenvolvimento. Aqui você poderá gerenciar as integrações 
-                com APIs externas.
-              </p>
+              <SophiaConfiguration />
             </TabsContent>
 
             {/* Conteúdo da aba Pessoas */}
@@ -233,3 +309,7 @@ const SettingsPage = () => {
 };
 
 export default SettingsPage;
+
+
+
+

@@ -4,16 +4,15 @@ import Header from "@/components/Header";
 import MetricsCards from "@/components/MetricsCards";
 import StationContainer from "@/components/StationContainer";
 import OrderButton from "@/components/OrderButton";
-import FuelTank from "@/components/FuelTank";
 import PurchaseSuggestionModal from "@/components/PurchaseSuggestionModal";
 import { useTankData } from "@/hooks/use-tank-data";
 import { Loader2, AlertTriangle, AlertCircle, CheckCircle, Droplet } from "lucide-react";
 
 const Index = () => {
   const [selectedTanks, setSelectedTanks] = useState<Record<string, { selected: boolean; quantity: number }>>({});
-  
-  // Buscar dados reais dos tanques da API
-  const { data: stations, isLoading, error } = useTankData();
+
+  // Banco-first com fallback para API (hook decide a estrat�gia)
+  const { data: stations, isLoading, error, dataAlert } = useTankData();
 
   const handleTankSelect = (stationId: string, tankId: string, selected: boolean) => {
     const key = `${stationId}-${tankId}`;
@@ -48,7 +47,6 @@ const Index = () => {
       description: `${selectedCount} tanques selecionados - Total: ${totalLiters.toLocaleString()}L`,
     });
 
-    // Reset selections
     setSelectedTanks({});
   };
 
@@ -58,9 +56,9 @@ const Index = () => {
     <div className="min-h-screen p-6">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <Header />
-        
+
         <MetricsCards stations={stations} />
-        
+
         <div className="space-y-6 mt-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -77,13 +75,13 @@ const Index = () => {
               <div className="flex items-center space-x-1">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <span className="text-sm text-slate-900 dark:text-slate-400 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> Crítico
+                  <AlertCircle className="h-3 w-3" /> Critico
                 </span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="w-3 h-3 rounded-full bg-amber-500"></div>
                 <span className="text-sm text-slate-900 dark:text-slate-400 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" /> Atenção
+                  <AlertTriangle className="h-3 w-3" /> Atencao
                 </span>
               </div>
               <div className="flex items-center space-x-1">
@@ -94,10 +92,10 @@ const Index = () => {
               </div>
             </div>
             <div className="text-sm text-slate-900 dark:text-slate-400">
-              {stations ? `${stations.length} postos ativos • ${stations.reduce((total, station) => total + station.tanks.length, 0)} tanques monitorados` : 'Carregando...'}
+              {stations ? `${stations.length} postos ativos � ${stations.reduce((total, station) => total + station.tanks.length, 0)} tanques monitorados` : 'Carregando...'}
             </div>
           </div>
-          
+
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -107,23 +105,38 @@ const Index = () => {
             <div className="glass-card p-6 text-center">
               <p className="text-red-400 font-medium mb-2">Erro ao carregar dados</p>
               <p className="text-slate-400 text-sm">
-                Não foi possível obter informações dos tanques. Por favor, tente novamente mais tarde.
+                Nao foi possivel obter informacoes dos tanques. Por favor, tente novamente mais tarde.
               </p>
               <p className="text-slate-500 text-xs mt-4">{(error as Error).message}</p>
             </div>
           ) : (
-            <StationContainer
-              stations={stations || []}
-              onTankSelect={handleTankSelect}
-              onQuantityChange={handleQuantityChange}
-              selectedTanks={selectedTanks}
-            />
+            <>
+              {dataAlert && (
+                <div
+                  className={`rounded-lg border px-4 py-3 text-sm ${
+                    dataAlert.level === 'warning'
+                      ? 'bg-amber-50 border-amber-200 text-amber-800'
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}
+                >
+                  <p className="font-semibold">{dataAlert.title}</p>
+                  <p>{dataAlert.message}</p>
+                </div>
+              )}
+
+              <StationContainer
+                stations={stations || []}
+                onTankSelect={handleTankSelect}
+                onQuantityChange={handleQuantityChange}
+                selectedTanks={selectedTanks}
+              />
+            </>
           )}
         </div>
 
         {selectedCount > 0 && (
-          <OrderButton 
-            selectedCount={selectedCount} 
+          <OrderButton
+            selectedCount={selectedCount}
             totalLiters={Object.values(selectedTanks)
               .filter(tank => tank.selected)
               .reduce((total, tank) => total + tank.quantity, 0)

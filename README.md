@@ -20,6 +20,8 @@ VITE_API_KEY=sua_chave_api_aqui
 - **Temas Claro/Escuro**: Interface adaptável com temas personalizados
 - **Indicadores de Tanques**: Visualização realista dos níveis de combustível preenchendo de baixo para cima
 - **Integração com API**: Busca dados de tanques em tempo real
+- **Histórico de Mudanças**: veja `docs/changes/2026-03-04-gasmobile-cadastro-nomes.md`
+- **Fluxo de Pedidos de Combustível**: veja `docs/flows/fluxo-pedido-combustivel-atual.md`
 
 ## What technologies are used for this project?
 

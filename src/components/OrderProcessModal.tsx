@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Station } from "@/hooks/use-tank-data";
-import webhookApi from "@/services/webhook-api";
+import ordersApiService from "@/services/orders-api";
+import sophiaOpsApi from "@/services/sophia-ops-api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -345,24 +346,68 @@ export default function OrderProcessModal({
     try {
       setIsSendingToSophia(true);
       setConfirmSophiaOpen(false); // Close confirmation dialog
-      
-      // Generate the payload for Sophia
-      const payload = generateSophiaPayload();
-      console.log("Sophia payload:", payload);
-      
-      // Get Sophia webhooks
-      const sophiaWebhooks = await webhookApi.getWebhooksByType('sophia_ai_order');
-      
-      if (sophiaWebhooks.length === 0) {
-        throw new Error("Nenhum webhook da Sophia configurado");
+      let ordersSaved = false;
+
+      // Gerar group_id para este batch
+      const groupId = crypto.randomUUID();
+
+      // Salvar pedidos no banco antes de enviar para Sophia
+      if (stations) {
+        try {
+          const ordersToSave = Object.entries(selectedTanks)
+            .filter(([, v]) => v.selected && v.quantity > 0)
+            .flatMap(([key, v]) => {
+              const stationMatch = key.match(/station-(\d+)/);
+              const tankMatch = key.match(/tank-(\d+)/);
+              if (!stationMatch || !tankMatch) return [];
+              const station = stations.find(s => s.id === `station-${stationMatch[1]}`);
+              if (!station) return [];
+              const tank = station.tanks.find(t =>
+                String(t.id) === tankMatch[1] || t.id === `tank-${tankMatch[1]}`
+              );
+              return [{
+                station_id: station.id,
+                station_name: station.name,
+                tank_id: String(tank?.id ?? tankMatch[1]),
+                product_type: tank?.type ?? 'Desconhecido',
+                quantity: Math.floor(v.quantity),
+              }];
+            });
+          if (ordersToSave.length > 0) {
+            await ordersApiService.createBulkOrders(groupId, ordersToSave);
+            ordersSaved = true;
+          }
+        } catch (saveError) {
+          console.error('Erro ao salvar pedidos:', saveError);
+          const message = saveError instanceof Error ? saveError.message : 'Falha ao salvar pedidos';
+          toast({
+            title: "Erro ao salvar pedidos",
+            description: message,
+            variant: "destructive",
+          });
+          return;
+        }
       }
-      
-      // Send to all configured Sophia webhooks
-      const promises = sophiaWebhooks.map(webhook => 
-        webhookApi.sendToWebhook(webhook.id, payload)
-      );
-      
-      await Promise.all(promises);
+
+      // Generate the payload for Sophia
+      const payload = { ...generateSophiaPayload(), group_id: groupId };
+      console.log("Sophia payload:", payload);
+
+      await sophiaOpsApi.processOrderBatch(payload);
+      if (!ordersSaved) {
+        toast({
+          title: "Lote não persistido",
+          description: "Pedido não foi salvo no banco. Envio cancelado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        await ordersApiService.markGroupSophiaSent(groupId);
+      } catch (markError) {
+        console.error('Falha ao marcar lote como enviado para Sophia:', markError);
+      }
       
       toast({
         title: "Enviado para Sophia!",

@@ -8,6 +8,30 @@ const router = express.Router();
 const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
+const SOPHIA_DEFAULTS = {
+  provider: 'openai',
+  model: 'gpt-4.1-mini',
+  openai_api_key: '',
+  openrouter_api_key: '',
+  anthropic_api_key: '',
+};
+
+async function ensureSophiaConfigTable() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS sophia_configuracoes (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      provider VARCHAR(30) NOT NULL DEFAULT 'openai',
+      model VARCHAR(120) NOT NULL DEFAULT 'gpt-4.1-mini',
+      openai_api_key TEXT,
+      openrouter_api_key TEXT,
+      anthropic_api_key TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
 /**
  * @route GET /api/configurations
  * @desc Obter as configurações do usuário atual
@@ -93,6 +117,89 @@ router.put('/', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Erro ao atualizar configurações:', error);
     return res.status(500).json({ error: 'Erro ao atualizar configurações' });
+  }
+});
+
+/**
+ * @route GET /api/configurations/sophia
+ * @desc Obter configurações da Sophia para o usuário atual
+ * @access Private
+ */
+router.get('/sophia', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await ensureSophiaConfigTable();
+
+    const result = await db.query(
+      `
+      SELECT provider, model, openai_api_key, openrouter_api_key, anthropic_api_key
+      FROM sophia_configuracoes
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.json(SOPHIA_DEFAULTS);
+    }
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao buscar configurações da Sophia:', error);
+    return res.status(500).json({ error: 'Erro ao buscar configurações da Sophia' });
+  }
+});
+
+/**
+ * @route PUT /api/configurations/sophia
+ * @desc Atualizar configurações da Sophia para o usuário atual
+ * @access Private
+ */
+router.put('/sophia', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      provider,
+      model,
+      openai_api_key = '',
+      openrouter_api_key = '',
+      anthropic_api_key = '',
+    } = req.body;
+
+    const allowedProviders = ['openai', 'openrouter', 'anthropic'];
+    if (!allowedProviders.includes(provider)) {
+      return res.status(400).json({ error: 'Provider inválido. Use openai, openrouter ou anthropic.' });
+    }
+
+    if (!model || typeof model !== 'string' || model.trim().length < 2) {
+      return res.status(400).json({ error: 'Model é obrigatório.' });
+    }
+
+    await ensureSophiaConfigTable();
+
+    const result = await db.query(
+      `
+      INSERT INTO sophia_configuracoes (
+        user_id, provider, model, openai_api_key, openrouter_api_key, anthropic_api_key
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        provider = EXCLUDED.provider,
+        model = EXCLUDED.model,
+        openai_api_key = EXCLUDED.openai_api_key,
+        openrouter_api_key = EXCLUDED.openrouter_api_key,
+        anthropic_api_key = EXCLUDED.anthropic_api_key,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING provider, model, openai_api_key, openrouter_api_key, anthropic_api_key
+      `,
+      [userId, provider, model.trim(), openai_api_key, openrouter_api_key, anthropic_api_key],
+    );
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao atualizar configurações da Sophia:', error);
+    return res.status(500).json({ error: 'Erro ao atualizar configurações da Sophia' });
   }
 });
 

@@ -17,6 +17,24 @@ export interface ConfigurationSettings {
   threshold_atencao: number;
 }
 
+export type SophiaProvider = 'openai' | 'openrouter' | 'anthropic';
+
+export interface SophiaConfigurationSettings {
+  provider: SophiaProvider;
+  model: string;
+  openai_api_key: string;
+  openrouter_api_key: string;
+  anthropic_api_key: string;
+}
+
+export const DEFAULT_SOPHIA_CONFIG: SophiaConfigurationSettings = {
+  provider: 'openai',
+  model: 'gpt-4.1-mini',
+  openai_api_key: '',
+  openrouter_api_key: '',
+  anthropic_api_key: '',
+};
+
 // Valores padrão para as configurações de threshold
 export const DEFAULT_THRESHOLDS = {
   threshold_critico: 20,
@@ -43,6 +61,32 @@ const getConfigurations = async (): Promise<ConfigurationSettings> => {
     console.error('Erro ao obter configurações:', error);
     // Retorna valores padrão em caso de erro
     return DEFAULT_THRESHOLDS;
+  }
+};
+
+const getSophiaConfig = async (): Promise<SophiaConfigurationSettings> => {
+  try {
+    const response = await configApi.get('/sophia');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao obter configurações da Sophia:', error);
+    return DEFAULT_SOPHIA_CONFIG;
+  }
+};
+
+const updateSophiaConfig = async (
+  settings: SophiaConfigurationSettings,
+): Promise<SophiaConfigurationSettings> => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Token de autenticação não encontrado');
+    }
+    const response = await configApi.put('/sophia', settings);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao atualizar configurações da Sophia:', error);
+    throw error;
   }
 };
 
@@ -113,10 +157,13 @@ const needsAttention = async (percentual: number, configs?: ConfigurationSetting
 const ConfigurationAPI = {
   getConfigurations,
   updateConfigurations,
+  getSophiaConfig,
+  updateSophiaConfig,
   getStatus,
   isCritical,
   needsAttention,
-  DEFAULT_THRESHOLDS
+  DEFAULT_THRESHOLDS,
+  DEFAULT_SOPHIA_CONFIG,
 };
 
 export default ConfigurationAPI;
