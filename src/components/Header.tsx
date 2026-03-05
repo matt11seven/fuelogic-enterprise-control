@@ -1,5 +1,4 @@
-
-import { Database, Sun, Moon } from "lucide-react";
+﻿import { Database, Sun, Moon } from "lucide-react";
 import { ProfileButton } from "./ProfileButton";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
@@ -11,7 +10,6 @@ const Header = () => {
   const [mounted, setMounted] = useState(false);
   const location = useLocation();
 
-  // Usar useEffect para evitar problemas de hidratação com SSR
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -28,6 +26,13 @@ const Header = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const navLinkClass = (isActive: boolean) =>
+    `px-3 py-1.5 rounded-md text-sm border transition-colors ${
+      isActive
+        ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
+        : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
+    }`;
+
   return (
     <header className="glass-card p-6 mb-8">
       <div className="flex items-center justify-between">
@@ -40,41 +45,23 @@ const Header = () => {
               GasMobile Enterprise
             </h1>
             <p className="text-slate-400 text-sm font-medium">
-              Gerênciamento Avançado de tanques
+              Gerenciamento avancado de tanques
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-6">
           <div className="flex items-center space-x-2">
-            <Link
-              to="/"
-              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                location.pathname === "/"
-                  ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
-                  : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
-              }`}
-            >
-              Operação
+            <Link to="/" className={navLinkClass(location.pathname === "/")}>
+              Operacao
             </Link>
-            <Link
-              to="/pedidos"
-              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                location.pathname === "/pedidos"
-                  ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
-                  : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
-              }`}
-            >
+            <Link to="/cotacoes" className={navLinkClass(location.pathname === "/cotacoes")}>
+              Cotacoes
+            </Link>
+            <Link to="/pedidos" className={navLinkClass(location.pathname === "/pedidos")}>
               Pedidos
             </Link>
-            <Link
-              to="/sophia-ops"
-              className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                location.pathname === "/sophia-ops"
-                  ? "bg-emerald-600/20 border-emerald-500 text-emerald-300"
-                  : "bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/60"
-              }`}
-            >
+            <Link to="/sophia-ops" className={navLinkClass(location.pathname === "/sophia-ops")}>
               Soph<span className="uppercase">IA</span>
             </Link>
           </div>
@@ -90,15 +77,13 @@ const Header = () => {
               <Moon className="w-5 h-5 text-slate-300" />
             )}
           </button>
-          
+
           <div className="text-right">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-emerald-400 text-sm font-semibold">SISTEMA ATIVO</span>
             </div>
-            <p className="text-slate-300 text-sm font-mono">
-              {currentTime.toLocaleString('pt-BR')}
-            </p>
+            <p className="text-slate-300 text-sm font-mono">{currentTime.toLocaleString("pt-BR")}</p>
           </div>
         </div>
       </div>

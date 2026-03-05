@@ -8,6 +8,10 @@ import { OrderFilters } from "@/components/orders/OrderFilters";
 import { OrderTable } from "@/components/orders/OrderTable";
 import { OrderKanbanBoard } from "@/components/orders/OrderKanbanBoard";
 import { OrderDetailsDrawer } from "@/components/orders/OrderDetailsDrawer";
+import { QuotationDecisionModal } from "@/components/orders/QuotationDecisionModal";
+import { OrderEmissionModal } from "@/components/orders/OrderEmissionModal";
+import { PurchaseDecisionModal } from "@/components/orders/PurchaseDecisionModal";
+import { OrderGroupDrawer } from "@/components/orders/OrderGroupDrawer";
 import PurchaseSuggestionModal from "@/components/PurchaseSuggestionModal";
 import ordersApiService, { OrderItem, OrderStats } from "@/services/orders-api";
 import ConfigurationAPI from "@/services/configuration-api";
@@ -24,6 +28,13 @@ const Pedidos = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "kanban">("kanban");
   const [sophiaQuoteEnabled, setSophiaQuoteEnabled] = useState(false);
+  const [quotationModalOpen, setQuotationModalOpen] = useState(false);
+  const [quotedOrdersForModal, setQuotedOrdersForModal] = useState<OrderItem[]>([]);
+  const [emissionModalOpen, setEmissionModalOpen] = useState(false);
+  const [approvedOrdersForModal, setApprovedOrdersForModal] = useState<OrderItem[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<OrderItem[] | null>(null);
+  const [purchaseDecisionOpen, setPurchaseDecisionOpen] = useState(false);
+  const [pendingOrdersForDecision, setPendingOrdersForDecision] = useState<OrderItem[]>([]);
   const { data: stations } = useTankData();
 
   const loadStats = useCallback(async () => {
@@ -73,6 +84,25 @@ const Pedidos = () => {
   }, [loadOrders]);
 
   const handleUpdated = () => { loadOrders(); loadStats(); };
+
+  const handleManageQuotations = (quotedOrders: OrderItem[]) => {
+    setQuotedOrdersForModal(quotedOrders);
+    setQuotationModalOpen(true);
+  };
+
+  const handleSelectGroup = (groupOrders: OrderItem[]) => {
+    setSelectedGroup(groupOrders);
+  };
+
+  const handlePurchaseDecision = (pendingOrders: OrderItem[]) => {
+    setPendingOrdersForDecision(pendingOrders);
+    setPurchaseDecisionOpen(true);
+  };
+
+  const handleEmitOrders = (approvedOrders: OrderItem[]) => {
+    setApprovedOrdersForModal(approvedOrders);
+    setEmissionModalOpen(true);
+  };
 
   const handleMoveOrder = async (order: OrderItem, toStatus: OrderItem["status"]) => {
     if (order.status === toStatus) return;
@@ -132,28 +162,39 @@ const Pedidos = () => {
 
           {/* Tabela */}
           <div className="glass-card overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/10 dark:border-white/10 light:border-emerald-100/60 flex items-center justify-between">
-              <h3 className="font-semibold text-sm uppercase tracking-wide text-slate-900 dark:text-slate-300">
-                {viewMode === "kanban" ? "Kanban de Pedidos" : "Lista de Pedidos"}
-              </h3>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">
-                  {isLoadingOrders ? "Carregando..." : `${orders.length} pedido(s)`}
-                </span>
-                <div className="inline-flex rounded-md border overflow-hidden">
-                  <button
-                    className={`px-2 py-1 text-xs ${viewMode === "kanban" ? "bg-emerald-500 text-white" : "bg-white text-slate-700"}`}
-                    onClick={() => setViewMode("kanban")}
-                  >
-                    Kanban
-                  </button>
-                  <button
-                    className={`px-2 py-1 text-xs ${viewMode === "table" ? "bg-emerald-500 text-white" : "bg-white text-slate-700"}`}
-                    onClick={() => setViewMode("table")}
-                  >
-                    Tabela
-                  </button>
-                </div>
+            <div className="px-5 py-3.5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <h3 className="font-semibold text-[13px] text-slate-800 dark:text-slate-200">
+                  {viewMode === "kanban" ? "Kanban de Pedidos" : "Lista de Pedidos"}
+                </h3>
+                {!isLoadingOrders && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-4 px-1.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-semibold tabular-nums ring-1 ring-slate-200/80">
+                    {orders.length}
+                  </span>
+                )}
+              </div>
+              {/* Segmented control — Vercel style */}
+              <div className="inline-flex items-center rounded-lg bg-slate-100 p-0.5 gap-0.5">
+                <button
+                  onClick={() => setViewMode("kanban")}
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+                    viewMode === "kanban"
+                      ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200/80"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Kanban
+                </button>
+                <button
+                  onClick={() => setViewMode("table")}
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+                    viewMode === "table"
+                      ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200/80"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Tabela
+                </button>
               </div>
             </div>
             <div className="p-4">
@@ -162,13 +203,17 @@ const Pedidos = () => {
                   orders={orders}
                   isLoading={isLoadingOrders}
                   onSelect={setSelectedOrder}
+                  onSelectGroup={handleSelectGroup}
                   sophiaQuoteEnabled={sophiaQuoteEnabled}
                   onMoveOrder={handleMoveOrder}
+                  onManageQuotations={handleManageQuotations}
+                  onEmitOrders={handleEmitOrders}
+                  onPurchaseDecision={handlePurchaseDecision}
                   needAction={
                     <PurchaseSuggestionModal
                       stations={stations}
                       triggerLabel="Gerar Pedido"
-                      compactTrigger
+                      triggerClassName="shrink-0 inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 hover:bg-orange-100 transition-colors"
                     />
                   }
                 />
@@ -184,10 +229,47 @@ const Pedidos = () => {
         </div>
       </div>
 
+      {selectedGroup && (
+        <OrderGroupDrawer
+          orders={selectedGroup}
+          onClose={() => setSelectedGroup(null)}
+          onSelectOrder={(order) => {
+            setSelectedGroup(null);
+            setSelectedOrder(order);
+          }}
+        />
+      )}
+
       {selectedOrder && (
         <OrderDetailsDrawer
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onUpdated={handleUpdated}
+        />
+      )}
+
+      {purchaseDecisionOpen && (
+        <PurchaseDecisionModal
+          pendingOrders={pendingOrdersForDecision}
+          sophiaEnabled={sophiaQuoteEnabled}
+          onClose={() => setPurchaseDecisionOpen(false)}
+          onUpdated={handleUpdated}
+        />
+      )}
+
+      {quotationModalOpen && (
+        <QuotationDecisionModal
+          quotedOrders={quotedOrdersForModal}
+          sophiaEnabled={sophiaQuoteEnabled}
+          onClose={() => setQuotationModalOpen(false)}
+          onUpdated={handleUpdated}
+        />
+      )}
+
+      {emissionModalOpen && (
+        <OrderEmissionModal
+          approvedOrders={approvedOrdersForModal}
+          onClose={() => setEmissionModalOpen(false)}
           onUpdated={handleUpdated}
         />
       )}

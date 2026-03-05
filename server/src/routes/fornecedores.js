@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
     const {
       razao_social, nome_fantasia, cnpj, telefone, email,
       contato_comercial, prazo_entrega_dias, observacoes, status,
-      combustivel_ids
+      combustivel_ids, custo_frete_proprio_rl
     } = req.body;
 
     if (!razao_social) {
@@ -85,11 +85,12 @@ router.post('/', async (req, res) => {
     const result = await db.query(
       `INSERT INTO fornecedores
        (user_id, razao_social, nome_fantasia, cnpj, telefone, email,
-        contato_comercial, prazo_entrega_dias, observacoes, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        contato_comercial, prazo_entrega_dias, observacoes, status, custo_frete_proprio_rl)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [userId, razao_social, nome_fantasia, cnpj, telefone, email,
-       contato_comercial, prazo_entrega_dias, observacoes, status || 'ativo']
+       contato_comercial, prazo_entrega_dias, observacoes, status || 'ativo',
+       custo_frete_proprio_rl ?? 0]
     );
 
     const fornecedor = result.rows[0];
@@ -120,7 +121,7 @@ router.put('/:id', async (req, res) => {
     const {
       razao_social, nome_fantasia, cnpj, telefone, email,
       contato_comercial, prazo_entrega_dias, observacoes, status,
-      combustivel_ids
+      combustivel_ids, custo_frete_proprio_rl
     } = req.body;
 
     const check = await db.query(
@@ -138,12 +139,12 @@ router.put('/:id', async (req, res) => {
       `UPDATE fornecedores SET
          razao_social=$1, nome_fantasia=$2, cnpj=$3, telefone=$4, email=$5,
          contato_comercial=$6, prazo_entrega_dias=$7, observacoes=$8,
-         status=$9, updated_at=NOW()
-       WHERE id=$10 AND user_id=$11
+         status=$9, custo_frete_proprio_rl=$10, updated_at=NOW()
+       WHERE id=$11 AND user_id=$12
        RETURNING *`,
       [razao_social, nome_fantasia, cnpj, telefone, email,
        contato_comercial, prazo_entrega_dias, observacoes,
-       status, id, userId]
+       status, custo_frete_proprio_rl ?? 0, id, userId]
     );
 
     if (Array.isArray(combustivel_ids)) {

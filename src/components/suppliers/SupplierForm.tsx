@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X } from "lucide-react";
+import { Save, X, Info } from "lucide-react";
 import { Fornecedor } from "@/services/suppliers-api";
 import { Combustivel } from "@/services/fuels-api";
 
@@ -170,6 +170,28 @@ const SupplierForm = ({ isOpen, onClose, onSave, initialData, combustiveis }: Su
                 placeholder="Ex: 2"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="custo_frete_proprio_rl">Custo Frete Próprio (R$/L)</Label>
+              <span
+                title="Custo do seu transporte por litro. Usado no cálculo do custo real quando o fornecedor pratica FOB."
+                className="text-slate-400 hover:text-slate-600 cursor-help"
+              >
+                <Info className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <Input
+              id="custo_frete_proprio_rl"
+              type="number"
+              min={0}
+              step={0.0001}
+              value={fornecedor.custo_frete_proprio_rl ?? ''}
+              onChange={e => handleChange('custo_frete_proprio_rl', e.target.value ? Number(e.target.value) : undefined)}
+              placeholder="Ex: 0.12"
+            />
+            <p className="text-xs text-slate-500">Preencha apenas para frete FOB. Deixe 0 para CIF.</p>
           </div>
 
           {/* Combustíveis */}

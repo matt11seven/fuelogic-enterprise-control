@@ -16,8 +16,8 @@ interface OrderStatusBadgeProps {
 export function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.className}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${config.className}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${config.dot}`} />
       {config.label}
     </span>
   );

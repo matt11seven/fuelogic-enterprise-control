@@ -9,7 +9,7 @@ import OccupancyBar from "./OccupancyBar";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { CheckCircle, AlertTriangle, AlertCircle, Droplet, Truck, Eye, FileText } from "lucide-react";
+import { CheckCircle, AlertTriangle, AlertCircle, Droplet, Truck, Eye, FileText, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { useMockData } from "@/context/MockDataContext";
 
@@ -52,6 +52,9 @@ export function StationTableView({
 }: StationTableViewProps) {
   const { thresholds } = useConfig();
   const [selectedStation, setSelectedStation] = useState<string>('all');
+  type SortKey = 'station' | 'tank' | 'type' | 'status' | 'current' | 'sales' | 'delivery' | 'final' | 'quantity';
+  const [sortKey, setSortKey] = useState<SortKey>('station');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Usar o utilitário centralizado para cores de combustível
   const getTankStatus = (tank: Tank) => {
@@ -95,7 +98,7 @@ export function StationTableView({
     : stationsWithMockData.filter(station => station.id === selectedStation);
 
   // Preparar dados para a tabela
-  const tableData = filteredStations.flatMap(station => 
+  const tableDataRaw = filteredStations.flatMap(station => 
     station.tanks.map(tank => ({
       station,
       tank,
@@ -104,6 +107,51 @@ export function StationTableView({
       quantity: selectedTanks[`${station.id}-${tank.id}`]?.quantity || 0
     }))
   );
+
+  const tableData = useMemo(() => {
+    const sorted = [...tableDataRaw];
+    const factor = sortDirection === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      const tankA = Number(a.tank.apiData?.Tanque || 0);
+      const tankB = Number(b.tank.apiData?.Tanque || 0);
+      const currentA = Number(a.tank.current || 0);
+      const currentB = Number(b.tank.current || 0);
+      const salesA = Number(a.tank.expectedSales || 0);
+      const salesB = Number(b.tank.expectedSales || 0);
+      const deliveryA = Number(a.tank.expectedDelivery || 0);
+      const deliveryB = Number(b.tank.expectedDelivery || 0);
+      const finalA = Number(calculateTotalFinal(a.tank.current, a.tank.expectedDelivery || 0, a.tank.expectedSales || 0, a.quantity, false) || 0);
+      const finalB = Number(calculateTotalFinal(b.tank.current, b.tank.expectedDelivery || 0, b.tank.expectedSales || 0, b.quantity, false) || 0);
+      const qtyA = Number(a.quantity || 0);
+      const qtyB = Number(b.quantity || 0);
+
+      switch (sortKey) {
+        case 'station':
+          return a.station.name.localeCompare(b.station.name) * factor;
+        case 'tank':
+          return (tankA - tankB) * factor;
+        case 'type':
+          return a.tank.type.localeCompare(b.tank.type) * factor;
+        case 'status':
+          return a.status.label.localeCompare(b.status.label) * factor;
+        case 'current':
+          return (currentA - currentB) * factor;
+        case 'sales':
+          return (salesA - salesB) * factor;
+        case 'delivery':
+          return (deliveryA - deliveryB) * factor;
+        case 'final':
+          return (finalA - finalB) * factor;
+        case 'quantity':
+          return (qtyA - qtyB) * factor;
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [tableDataRaw, sortDirection, sortKey]);
   
   // Calcular totais gerais
   const calculateTotals = () => {
@@ -170,6 +218,22 @@ export function StationTableView({
     const shouldSelect = quantity > 0;
     onTankSelect(stationId, tankId, shouldSelect);
     onQuantityChange(stationId, tankId, quantity);
+  };
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setSortKey(key);
+    setSortDirection('asc');
+  };
+
+  const renderSortIcon = (key: SortKey) => {
+    if (sortKey !== key) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
+    return sortDirection === 'asc'
+      ? <ChevronUp className="h-3 w-3" />
+      : <ChevronDown className="h-3 w-3" />;
   };
 
   return (
@@ -247,15 +311,51 @@ export function StationTableView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Posto</TableHead>
-                <TableHead>Tanque</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Atual/Capacidade</TableHead>
-                <TableHead>Venda Prevista</TableHead>
-                <TableHead>Recebimento</TableHead>
-                <TableHead>Total Final</TableHead>
-                <TableHead>Quantidade</TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('station')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Posto {renderSortIcon('station')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('tank')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Tanque {renderSortIcon('tank')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('type')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Tipo {renderSortIcon('type')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('status')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Status {renderSortIcon('status')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('current')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Atual/Capacidade {renderSortIcon('current')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('sales')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Venda Prevista {renderSortIcon('sales')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('delivery')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Recebimento {renderSortIcon('delivery')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('final')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Total Final {renderSortIcon('final')}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button type="button" onClick={() => handleSort('quantity')} className="inline-flex items-center gap-1 hover:text-emerald-600">
+                    Quantidade {renderSortIcon('quantity')}
+                  </button>
+                </TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>

@@ -43,12 +43,14 @@ interface PurchaseSuggestionModalProps {
   stations: Station[] | undefined;
   triggerLabel?: string;
   compactTrigger?: boolean;
+  triggerClassName?: string;
 }
 
 export default function PurchaseSuggestionModal({
   stations,
   triggerLabel = "Sugerir Compras",
   compactTrigger = false,
+  triggerClassName,
 }: PurchaseSuggestionModalProps): JSX.Element {
   // Obter os thresholds configurados do contexto global
   const { thresholds } = useConfig();
@@ -528,15 +530,26 @@ export default function PurchaseSuggestionModal({
 
   return (
     <>
-      <Button 
-        onClick={() => setOpen(true)} 
-        variant="outline" 
-        size={compactTrigger ? "sm" : "default"}
-        className={`flex items-center bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40 ${compactTrigger ? "h-7 px-2 text-xs" : ""}`}
-      >
-        <ShoppingCart className="w-4 h-4 mr-2" />
-        {triggerLabel}
-      </Button>
+      {triggerClassName ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={triggerClassName}
+        >
+          <ShoppingCart className="w-3 h-3" />
+          {triggerLabel}
+        </button>
+      ) : (
+        <Button
+          onClick={() => setOpen(true)}
+          variant="outline"
+          size={compactTrigger ? "sm" : "default"}
+          className={`flex items-center bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40 ${compactTrigger ? "h-7 px-2 text-xs" : ""}`}
+        >
+          <ShoppingCart className="w-4 h-4 mr-2" />
+          {triggerLabel}
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[600px]">

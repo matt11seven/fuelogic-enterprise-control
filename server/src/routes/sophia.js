@@ -18,6 +18,33 @@ const db = require('../db');
 
 const router = express.Router();
 
+function normalizeBaseName(value) {
+  const raw = String(value || '').trim();
+  return raw || 'Bagam';
+}
+
+function normalizeFreightCost(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
+function removeMetaNotes(text) {
+  return String(text || '')
+    .replace(/\[BASE:[^\]]+\]\s*/gi, '')
+    .replace(/\[FRETE_RL:[^\]]+\]\s*/gi, '')
+    .trim();
+}
+
+function withQuotationMeta(notes, baseName, freightCostRl) {
+  const cleanBase = normalizeBaseName(baseName);
+  const cleanFreight = normalizeFreightCost(freightCostRl);
+  const cleanNotes = removeMetaNotes(notes);
+  const markers = [`[BASE:${cleanBase}]`];
+  if (cleanFreight != null) markers.push(`[FRETE_RL:${cleanFreight.toFixed(4)}]`);
+  return cleanNotes ? `${markers.join(' ')} ${cleanNotes}` : markers.join(' ');
+}
+
 // Endpoint público de callback de cotações da Sophia
 router.post('/quotation-callback', async (req, res) => {
   try {
@@ -38,7 +65,15 @@ router.post('/quotation-callback', async (req, res) => {
       await db.query(
         `INSERT INTO order_quotations (order_group_id, supplier_name, product_type, unit_price, total_price, delivery_days, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [group_id, q.supplier_name, q.product_type, q.unit_price, q.total_price, q.delivery_days, q.notes]
+        [
+          group_id,
+          q.supplier_name,
+          q.product_type,
+          q.unit_price,
+          q.total_price,
+          q.delivery_days,
+          withQuotationMeta(q.notes, q.base_name, q.freight_cost_rl),
+        ]
       );
     }
 

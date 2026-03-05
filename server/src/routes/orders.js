@@ -111,6 +111,33 @@ async function getRequestUserIdOrFail(req, res) {
   return userId;
 }
 
+function normalizeBaseName(value) {
+  const raw = String(value || '').trim();
+  return raw || 'Bagam';
+}
+
+function normalizeFreightCost(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
+function removeMetaNotes(text) {
+  return String(text || '')
+    .replace(/\[BASE:[^\]]+\]\s*/gi, '')
+    .replace(/\[FRETE_RL:[^\]]+\]\s*/gi, '')
+    .trim();
+}
+
+function withQuotationMeta(notes, baseName, freightCostRl) {
+  const cleanBase = normalizeBaseName(baseName);
+  const cleanFreight = normalizeFreightCost(freightCostRl);
+  const cleanNotes = removeMetaNotes(notes);
+  const markers = [`[BASE:${cleanBase}]`];
+  if (cleanFreight != null) markers.push(`[FRETE_RL:${cleanFreight.toFixed(4)}]`);
+  return cleanNotes ? `${markers.join(' ')} ${cleanNotes}` : markers.join(' ');
+}
+
 // Middleware de autenticaÃ§Ã£o em todas as rotas
 router.use(authenticateToken);
 
@@ -214,6 +241,252 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// GET /api/orders/group/:groupId - Pedidos e cotaÃ§Ãµes do grupo
+router.get('/group/:groupId', async (req, res) => {
+  try {
+    const userId = await getRequestUserIdOrFail(req, res);
+    if (!userId) return;
+    const { groupId } = req.params;
+
+    const ordersResult = await db.query(
+      `SELECT o.*, t.name as truck_name, t.driver_name, t.license_plate
+       FROM orders o
+       LEFT JOIN trucks t ON o.truck_id = t.id
+       WHERE o.group_id = $1 AND o.user_id = $2
+       ORDER BY o.created_at ASC`,
+      [groupId, userId],
+    );
+
+    if (ordersResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Grupo nÃ£o encontrado' });
+    }
+
+    const quotationsResult = await db.query(
+      `SELECT * FROM order_quotations WHERE order_group_id = $1 ORDER BY unit_price ASC`,
+      [groupId],
+    );
+
+    res.json({
+      group_id: groupId,
+      orders: ordersResult.rows.map(normalizeOrderRow),
+      quotations: quotationsResult.rows,
+    });
+  } catch (error) {
+    console.error('Erro ao buscar grupo:', error);
+    res.status(500).json({ message: 'Erro ao buscar grupo' });
+  }
+});
+
+// PATCH /api/orders/group/:groupId/emit - Emitir pedido para todos do grupo (approved â†’ delivering)
+router.patch('/group/:groupId/emit', async (req, res) => {
+  try {
+    const userId = await getRequestUserIdOrFail(req, res);
+    if (!userId) return;
+    const { groupId } = req.params;
+    const { chosen_supplier, truck_id, delivery_estimate, notes } = req.body;
+
+    if (!delivery_estimate) {
+      return res.status(400).json({ message: 'A previsÃ£o de entrega (ETA) Ã© obrigatÃ³ria para emitir o pedido.' });
+    }
+
+    await db.query('BEGIN');
+
+    const deliveringDbStatus = await toDbStatus('delivering');
+    const result = await db.query(
+      `UPDATE orders
+       SET status = $1, truck_id = COALESCE($2, truck_id), delivery_estimate = $3, updated_at = NOW()
+       WHERE group_id = $4 AND user_id = $5 AND status = 'approved'
+       RETURNING id`,
+      [deliveringDbStatus, truck_id || null, delivery_estimate, groupId, userId],
+    );
+
+    if (result.rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ message: 'Nenhum pedido aprovado encontrado para o grupo.' });
+    }
+
+    const timelineDesc = [
+      'Pedido emitido',
+      chosen_supplier ? `Fornecedor: ${chosen_supplier}` : null,
+      delivery_estimate ? `ETA: ${delivery_estimate}` : null,
+      notes || null,
+    ].filter(Boolean).join(' | ');
+
+    for (const row of result.rows) {
+      await db.query(
+        `INSERT INTO order_timeline (order_id, status, description, created_by)
+         VALUES ($1, 'delivering', $2, 'operador')`,
+        [row.id, timelineDesc],
+      );
+    }
+
+    await db.query('COMMIT');
+
+    res.json({ success: true, updated: result.rows.length, group_id: groupId });
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error('Erro ao emitir pedido do grupo:', error);
+    res.status(500).json({ message: 'Erro ao emitir pedido do grupo' });
+  }
+});
+
+// PATCH /api/orders/group/:groupId/approve - Aprovar todos os pedidos do grupo
+router.patch('/group/:groupId/approve', async (req, res) => {
+  try {
+    const userId = await getRequestUserIdOrFail(req, res);
+    if (!userId) return;
+    const { groupId } = req.params;
+
+    const quoteCount = await db.query(
+      `SELECT COUNT(*)::int AS total FROM order_quotations WHERE order_group_id = $1`,
+      [groupId],
+    );
+    if ((quoteCount.rows[0]?.total || 0) < 1) {
+      return res.status(400).json({ message: 'Ã‰ necessÃ¡rio pelo menos 1 cotaÃ§Ã£o para aprovar o grupo.' });
+    }
+
+    await db.query('BEGIN');
+
+    const approvedDbStatus = await toDbStatus('approved');
+    const result = await db.query(
+      `UPDATE orders SET status = $1, updated_at = NOW()
+       WHERE group_id = $2 AND user_id = $3 AND status IN ('pending', 'quoted')
+       RETURNING id`,
+      [approvedDbStatus, groupId, userId],
+    );
+
+    for (const row of result.rows) {
+      await db.query(
+        `INSERT INTO order_timeline (order_id, status, description, created_by)
+         VALUES ($1, 'approved', 'Aprovado pela decisÃ£o de compra', 'operador')`,
+        [row.id],
+      );
+    }
+
+    await db.query('COMMIT');
+
+    res.json({ success: true, updated: result.rows.length, group_id: groupId });
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error('Erro ao aprovar grupo:', error);
+    res.status(500).json({ message: 'Erro ao aprovar grupo' });
+  }
+});
+
+// GET /api/orders/quotations/analytics - Historico de cotacoes (dia, dia anterior, medias)
+router.get('/quotations/analytics', async (req, res) => {
+  try {
+    const userId = await getRequestUserIdOrFail(req, res);
+    if (!userId) return;
+
+    const { ref_date } = req.query;
+    const refDate = String(ref_date || '').trim() || new Date().toISOString().slice(0, 10);
+
+    const baseParams = [userId, refDate];
+    const baseScope = `
+      FROM order_quotations oq
+      WHERE EXISTS (
+        SELECT 1
+        FROM orders o
+        WHERE o.group_id = oq.order_group_id
+          AND o.user_id = $1
+      )
+    `;
+
+    const todayResult = await db.query(
+      `
+      SELECT
+        oq.id,
+        oq.order_group_id,
+        oq.supplier_name,
+        oq.product_type,
+        oq.unit_price,
+        oq.delivery_days,
+        oq.created_at,
+        COALESCE(NULLIF(SUBSTRING(COALESCE(oq.notes, '') FROM '\\[BASE:([^\\]]+)\\]'), ''), 'Bagam') AS base_name,
+        NULLIF(SUBSTRING(COALESCE(oq.notes, '') FROM '\\[FRETE_RL:([0-9]+(?:\\.[0-9]+)?)\\]'), '')::numeric(10,4) AS freight_cost_rl,
+        CASE
+          WHEN oq.notes ~* '\\[CIF\\]' THEN 'CIF'
+          WHEN oq.notes ~* '\\[FOB\\]' THEN 'FOB'
+          ELSE ''
+        END AS freight_type
+      ${baseScope}
+        AND oq.created_at::date = $2::date
+      ORDER BY oq.created_at DESC
+      LIMIT 500
+      `,
+      baseParams,
+    );
+
+    const yesterdayResult = await db.query(
+      `
+      SELECT
+        oq.id,
+        oq.order_group_id,
+        oq.supplier_name,
+        oq.product_type,
+        oq.unit_price,
+        oq.delivery_days,
+        oq.created_at,
+        COALESCE(NULLIF(SUBSTRING(COALESCE(oq.notes, '') FROM '\\[BASE:([^\\]]+)\\]'), ''), 'Bagam') AS base_name,
+        NULLIF(SUBSTRING(COALESCE(oq.notes, '') FROM '\\[FRETE_RL:([0-9]+(?:\\.[0-9]+)?)\\]'), '')::numeric(10,4) AS freight_cost_rl,
+        CASE
+          WHEN oq.notes ~* '\\[CIF\\]' THEN 'CIF'
+          WHEN oq.notes ~* '\\[FOB\\]' THEN 'FOB'
+          ELSE ''
+        END AS freight_type
+      ${baseScope}
+        AND oq.created_at::date = ($2::date - INTERVAL '1 day')
+      ORDER BY oq.created_at DESC
+      LIMIT 500
+      `,
+      baseParams,
+    );
+
+    const weeklyAvgResult = await db.query(
+      `
+      SELECT
+        oq.supplier_name,
+        oq.product_type,
+        AVG(oq.unit_price)::numeric(12,4) AS avg_unit_price,
+        COUNT(*)::int AS samples
+      ${baseScope}
+        AND oq.created_at::date BETWEEN ($2::date - INTERVAL '6 day') AND $2::date
+      GROUP BY oq.supplier_name, oq.product_type
+      ORDER BY oq.product_type ASC, avg_unit_price ASC
+      `,
+      baseParams,
+    );
+
+    const monthlyAvgResult = await db.query(
+      `
+      SELECT
+        oq.supplier_name,
+        oq.product_type,
+        AVG(oq.unit_price)::numeric(12,4) AS avg_unit_price,
+        COUNT(*)::int AS samples
+      ${baseScope}
+        AND oq.created_at::date BETWEEN date_trunc('month', $2::date)::date AND $2::date
+      GROUP BY oq.supplier_name, oq.product_type
+      ORDER BY oq.product_type ASC, avg_unit_price ASC
+      `,
+      baseParams,
+    );
+
+    return res.json({
+      success: true,
+      reference_date: refDate,
+      today_rows: todayResult.rows,
+      yesterday_rows: yesterdayResult.rows,
+      weekly_avg: weeklyAvgResult.rows,
+      monthly_avg: monthlyAvgResult.rows,
+    });
+  } catch (error) {
+    console.error('Erro ao buscar analytics de cotaÃ§Ãµes:', error);
+    return res.status(500).json({ message: 'Erro ao buscar analytics de cotaÃ§Ãµes' });
+  }
+});
+
 // GET /api/orders/:id - Detalhes de um pedido
 router.get('/:id', async (req, res) => {
   try {
@@ -312,7 +585,7 @@ router.patch('/:id/status', async (req, res) => {
 
     const validStatuses = ['pending', 'quoted', 'approved', 'delivering', 'delivered', 'cancelled'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Status inválido' });
+      return res.status(400).json({ message: 'Status invï¿½lido' });
     }
 
     await db.query('BEGIN');
@@ -327,14 +600,14 @@ router.patch('/:id/status', async (req, res) => {
 
     if (existingResult.rows.length === 0) {
       await db.query('ROLLBACK');
-      return res.status(404).json({ message: 'Pedido não encontrado' });
+      return res.status(404).json({ message: 'Pedido nï¿½o encontrado' });
     }
 
     const existing = normalizeOrderRow(existingResult.rows[0]);
     if (!canTransitionOrderStatus(existing.status, status)) {
       await db.query('ROLLBACK');
       return res.status(400).json({
-        message: `Transição inválida: ${existing.status} -> ${status}`,
+        message: `Transiï¿½ï¿½o invï¿½lida: ${existing.status} -> ${status}`,
       });
     }
 
@@ -346,7 +619,7 @@ router.patch('/:id/status', async (req, res) => {
       if ((quoteCount.rows[0]?.total || 0) < 1) {
         await db.query('ROLLBACK');
         return res.status(400).json({
-          message: 'Aprovação humana requer pelo menos 1 cotação registrada.',
+          message: 'Aprovaï¿½ï¿½o humana requer pelo menos 1 cotaï¿½ï¿½o registrada.',
         });
       }
     }
@@ -354,7 +627,7 @@ router.patch('/:id/status', async (req, res) => {
     if (status === 'delivering' && !existing.delivery_estimate) {
       await db.query('ROLLBACK');
       return res.status(400).json({
-        message: 'Para iniciar entrega, defina a previsão de entrega (ETA).',
+        message: 'Para iniciar entrega, defina a previsï¿½o de entrega (ETA).',
       });
     }
 
@@ -443,7 +716,7 @@ router.patch('/group/:groupId/sophia-sent', async (req, res) => {
     for (const row of result.rows) {
       await db.query(
         `INSERT INTO order_timeline (order_id, status, description, created_by)
-         VALUES ($1, 'pending', 'Enviado para Sophia para cotação', 'sistema')`,
+         VALUES ($1, 'pending', 'Enviado para Sophia para cotaï¿½ï¿½o', 'sistema')`,
         [row.id]
       );
     }
@@ -553,16 +826,16 @@ router.post('/:id/notes', async (req, res) => {
   }
 });
 
-// POST /api/orders/group/:groupId/quotations - Receber cotações por grupo
+// POST /api/orders/group/:groupId/quotations - Receber cotaï¿½ï¿½es por grupo
 router.post('/group/:groupId/quotations', async (req, res) => {
   try {
     const userId = await getRequestUserIdOrFail(req, res);
     if (!userId) return;
     const { groupId } = req.params;
-    const { quotations, source = 'manual' } = req.body;
+      const { quotations, source = 'manual' } = req.body;
 
     if (!quotations || !Array.isArray(quotations)) {
-      return res.status(400).json({ message: 'Lista de cotações inválida' });
+      return res.status(400).json({ message: 'Lista de cotaï¿½ï¿½es invï¿½lida' });
     }
 
     await db.query('BEGIN');
@@ -571,7 +844,15 @@ router.post('/group/:groupId/quotations', async (req, res) => {
       await db.query(
         `INSERT INTO order_quotations (order_group_id, supplier_name, product_type, unit_price, total_price, delivery_days, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [groupId, q.supplier_name, q.product_type, q.unit_price, q.total_price, q.delivery_days, q.notes]
+        [
+          groupId,
+          q.supplier_name,
+          q.product_type,
+          q.unit_price,
+          q.total_price,
+          q.delivery_days,
+          withQuotationMeta(q.notes, q.base_name, q.freight_cost_rl),
+        ]
       );
     }
 
@@ -588,8 +869,8 @@ router.post('/group/:groupId/quotations', async (req, res) => {
     );
 
     const timelineDescription = source === 'sophia'
-      ? 'Cotações recebidas da Sophia'
-      : 'Cotações registradas manualmente';
+      ? 'Cotaï¿½ï¿½es recebidas da Sophia'
+      : 'Cotaï¿½ï¿½es registradas manualmente';
     const timelineActor = source === 'sophia' ? 'sophia' : 'operador';
 
     for (const row of orderIds.rows) {
@@ -605,8 +886,84 @@ router.post('/group/:groupId/quotations', async (req, res) => {
     res.json({ success: true, quotations_saved: quotations.length });
   } catch (error) {
     await db.query('ROLLBACK');
-    console.error('Erro ao salvar cotações:', error);
-    res.status(500).json({ message: 'Erro ao salvar cotações' });
+    console.error('Erro ao salvar cotaï¿½ï¿½es:', error);
+    res.status(500).json({ message: 'Erro ao salvar cotaï¿½ï¿½es' });
+  }
+});
+
+// POST /api/orders/purchase-decision - DecisÃ£o de compra: agrupa pedidos pending por fornecedor selecionado
+router.post('/purchase-decision', async (req, res) => {
+  try {
+    const userId = await getRequestUserIdOrFail(req, res);
+    if (!userId) return;
+
+    const { selections } = req.body;
+
+    if (!Array.isArray(selections) || selections.length === 0) {
+      return res.status(400).json({ message: 'Selecoes invalidas' });
+    }
+
+    const { randomUUID } = require('crypto');
+    const pendingDbStatus = await toDbStatus('pending');
+    const quotedDbStatus = await toDbStatus('quoted');
+
+    await db.query('BEGIN');
+
+    let groups_created = 0;
+    let orders_updated = 0;
+
+    for (const sel of selections) {
+      const { product_type, supplier_name, unit_price, freight_type, delivery_days, base_name, freight_cost_rl } = sel;
+      if (!product_type || !supplier_name) continue;
+
+      // Buscar pedidos pending deste produto para o usuario
+      const pendingResult = await db.query(
+        `SELECT id FROM orders WHERE user_id = $1 AND product_type = $2 AND status = $3`,
+        [userId, product_type, pendingDbStatus]
+      );
+
+      if (pendingResult.rows.length === 0) continue;
+
+      const orderIds = pendingResult.rows.map(r => r.id);
+      const groupId = randomUUID();
+
+      // Mover pedidos para quoted com o group_id do fornecedor selecionado
+      await db.query(
+        `UPDATE orders SET group_id = $1, status = $2, updated_at = NOW()
+         WHERE id = ANY($3::int[]) AND user_id = $4`,
+        [groupId, quotedDbStatus, orderIds, userId]
+      );
+
+      // Registrar cotacao do fornecedor selecionado
+      const freightNote = freight_type ? `[${freight_type}] ` : '';
+      const baseNote = withQuotationMeta(`${freightNote}Decisao de compra`, base_name, freight_cost_rl);
+      await db.query(
+        `INSERT INTO order_quotations (order_group_id, supplier_name, product_type, unit_price, total_price, delivery_days, notes)
+         VALUES ($1, $2, $3, $4, 0, $5, $6)`,
+        [groupId, supplier_name, product_type, unit_price || 0, delivery_days || 0, baseNote]
+      );
+
+      // Timeline para cada pedido
+      const description = `Decisao de compra: ${supplier_name} R$ ${Number(unit_price || 0).toFixed(4)}/L${freight_type ? ' ' + freight_type : ''}`;
+      for (const orderId of orderIds) {
+        await db.query(
+          `INSERT INTO order_timeline (order_id, status, description, created_by)
+           VALUES ($1, 'quoted', $2, 'operador')`,
+          [orderId, description]
+        );
+      }
+
+      groups_created++;
+      orders_updated += orderIds.length;
+    }
+
+    await db.query('COMMIT');
+
+    res.json({ success: true, groups_created, orders_updated });
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error('Erro na decisao de compra:', error);
+    res.status(500).json({ message: 'Erro ao processar decisao de compra' });
   }
 });
 

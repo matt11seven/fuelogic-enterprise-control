@@ -121,6 +121,7 @@ const SuppliersManager = () => {
                   <th className="py-3 px-4 text-left text-slate-900 dark:text-white hidden sm:table-cell">CNPJ</th>
                   <th className="py-3 px-4 text-left text-slate-900 dark:text-white hidden md:table-cell">Contato</th>
                   <th className="py-3 px-4 text-left text-slate-900 dark:text-white hidden lg:table-cell">Prazo (dias)</th>
+                  <th className="py-3 px-4 text-left text-slate-900 dark:text-white hidden xl:table-cell">Frete próprio R$/L</th>
                   <th className="py-3 px-4 text-left text-slate-900 dark:text-white">Status</th>
                   <th className="py-3 px-4 text-right text-slate-900 dark:text-white">Ações</th>
                 </tr>
@@ -128,7 +129,7 @@ const SuppliersManager = () => {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
                       {fornecedores.length === 0
                         ? "Nenhum fornecedor cadastrado. Clique em 'Novo Fornecedor' para começar."
                         : "Nenhum fornecedor encontrado."}
@@ -152,6 +153,11 @@ const SuppliersManager = () => {
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-400 hidden lg:table-cell">
                         {f.prazo_entrega_dias ?? '-'}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400 hidden xl:table-cell">
+                        {f.custo_frete_proprio_rl && f.custo_frete_proprio_rl > 0
+                          ? `R$ ${Number(f.custo_frete_proprio_rl).toFixed(4)}`
+                          : '—'}
                       </td>
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

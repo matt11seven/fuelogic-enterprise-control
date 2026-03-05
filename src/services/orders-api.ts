@@ -54,6 +54,8 @@ export interface OrderQuotation {
   order_group_id: string;
   supplier_name: string;
   product_type: string;
+  base_name?: string;
+  freight_cost_rl?: number | null;
   unit_price: number;
   total_price: number;
   delivery_days: number;
@@ -64,6 +66,8 @@ export interface OrderQuotation {
 export interface ManualOrderQuotationInput {
   supplier_name: string;
   product_type: string;
+  base_name?: string;
+  freight_cost_rl?: number | null;
   unit_price: number;
   total_price: number;
   delivery_days: number;
@@ -72,6 +76,12 @@ export interface ManualOrderQuotationInput {
 
 export interface OrderDetail extends OrderItem {
   timeline: OrderTimeline[];
+  quotations: OrderQuotation[];
+}
+
+export interface GroupDetail {
+  group_id: string;
+  orders: OrderItem[];
   quotations: OrderQuotation[];
 }
 
@@ -164,6 +174,81 @@ const addGroupQuotations = async (
   return response.data;
 };
 
+export interface PurchaseDecisionSelection {
+  product_type: string;
+  supplier_name: string;
+  base_name?: string;
+  freight_cost_rl?: number | null;
+  unit_price: number;
+  freight_type: 'FOB' | 'CIF' | '';
+  delivery_days: number;
+}
+
+export interface QuotationHistoryRow {
+  id: number;
+  order_group_id: string;
+  supplier_name: string;
+  product_type: string;
+  base_name: string;
+  freight_cost_rl?: number | null;
+  unit_price: number;
+  delivery_days: number;
+  created_at: string;
+  freight_type: 'FOB' | 'CIF' | '';
+}
+
+export interface QuotationAverageRow {
+  supplier_name: string;
+  product_type: string;
+  avg_unit_price: number;
+  samples: number;
+}
+
+export interface QuotationAnalyticsResponse {
+  success: boolean;
+  reference_date: string;
+  today_rows: QuotationHistoryRow[];
+  yesterday_rows: QuotationHistoryRow[];
+  weekly_avg: QuotationAverageRow[];
+  monthly_avg: QuotationAverageRow[];
+}
+
+export interface EmitGroupInput {
+  chosen_supplier?: string;
+  truck_id?: number | null;
+  delivery_estimate: string;
+  notes?: string;
+}
+
+const getGroupDetail = async (groupId: string): Promise<GroupDetail> => {
+  const response = await ordersApi.get(`/group/${groupId}`);
+  return response.data;
+};
+
+const approveGroup = async (groupId: string): Promise<{ success: boolean; updated: number; group_id: string }> => {
+  const response = await ordersApi.patch(`/group/${groupId}/approve`, {});
+  return response.data;
+};
+
+const emitGroup = async (groupId: string, input: EmitGroupInput): Promise<{ success: boolean; updated: number; group_id: string }> => {
+  const response = await ordersApi.patch(`/group/${groupId}/emit`, input);
+  return response.data;
+};
+
+const purchaseDecision = async (
+  selections: PurchaseDecisionSelection[],
+): Promise<{ success: boolean; groups_created: number; orders_updated: number }> => {
+  const response = await ordersApi.post('/purchase-decision', { selections });
+  return response.data;
+};
+
+const getQuotationAnalytics = async (refDate?: string): Promise<QuotationAnalyticsResponse> => {
+  const response = await ordersApi.get('/quotations/analytics', {
+    params: refDate ? { ref_date: refDate } : undefined,
+  });
+  return response.data;
+};
+
 const ordersApiService = {
   getOrders,
   getOrderById,
@@ -176,6 +261,11 @@ const ordersApiService = {
   setDeliveryEstimate,
   addNote,
   addGroupQuotations,
+  getGroupDetail,
+  approveGroup,
+  emitGroup,
+  purchaseDecision,
+  getQuotationAnalytics,
 };
 
 export default ordersApiService;

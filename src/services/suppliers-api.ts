@@ -27,6 +27,7 @@ export interface Fornecedor {
   email?: string;
   contato_comercial?: string;
   prazo_entrega_dias?: number;
+  custo_frete_proprio_rl?: number;
   observacoes?: string;
   status: 'ativo' | 'inativo';
   combustivel_ids?: number[];

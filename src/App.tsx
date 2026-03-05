@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import SophiaOps from "./pages/SophiaOps";
 import Pedidos from "./pages/Pedidos";
+import Cotacoes from "./pages/Cotacoes";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,11 @@ const App = () => (
                 <Route path="/pedidos" element={
                   <ProtectedRoute>
                     <Pedidos />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cotacoes" element={
+                  <ProtectedRoute>
+                    <Cotacoes />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
